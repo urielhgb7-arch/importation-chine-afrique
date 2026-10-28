@@ -1,205 +1,115 @@
 /**
- * Frontend Script : Simulateur de marge d'importation, carrousel interactif SANS jump de page,
- * lecteur vidéo 20s, accordéon FAQ, toasts et formulaire de paiement Maketou.
+ * Script Compact Format Court (2 Coups de Pouce) :
+ * - Défilement fluide instantané vers le formulaire & focus sur le champ Nom
+ * - Lecteur vidéo 20s avec lecture audio débloquée
+ * - Accordéon pliable du sommaire
+ * - Défilement horizontal fluide des avis sans aucun impact vertical
+ * - Connexion API Maketou
  */
 
 document.addEventListener('DOMContentLoaded', () => {
 
-  // 1. SIMULATEUR INTERACTIF DE MARGE D'IMPORTATION
-  const slider = document.getElementById('sim-slider');
-  const qtyDisplay = document.getElementById('sim-qty-display');
-  const localCostDisplay = document.getElementById('local-cost-display');
-  const alibabaCostDisplay = document.getElementById('alibaba-cost-display');
-  const savingsDisplay = document.getElementById('savings-display');
+  // 1. DÉFILEMENT INSTANTANÉ VERS LE FORMULAIRE & FOCUS SUR NOM (0.3s)
+  const scrollBtns = document.querySelectorAll('.js-scroll-to-checkout, a[href="#checkout-form"]');
+  const checkoutSection = document.getElementById('checkout-form');
+  const nameInput = document.getElementById('fullName');
 
-  const LOCAL_UNIT_PRICE = 3500; // Coût chez le grossiste local (marché)
-  const ALIBABA_UNIT_PRICE = 850; // Coût Direct Usine Alibaba transport cargo inclus
-
-  function updateSimulation() {
-    if (!slider) return;
-    const qty = parseInt(slider.value, 10);
-    const localTotal = qty * LOCAL_UNIT_PRICE;
-    const alibabaTotal = qty * ALIBABA_UNIT_PRICE;
-    const savings = localTotal - alibabaTotal;
-
-    qtyDisplay.textContent = `${qty} articles`;
-    localCostDisplay.textContent = `${localTotal.toLocaleString('fr-FR')} FCFA`;
-    alibabaCostDisplay.textContent = `${alibabaTotal.toLocaleString('fr-FR')} FCFA`;
-    savingsDisplay.textContent = `+${savings.toLocaleString('fr-FR')} FCFA dès votre 1er carton !`;
-  }
-
-  if (slider) {
-    slider.addEventListener('input', updateSimulation);
-    updateSimulation();
-  }
-
-  // 2. CARROUSEL INTERACTIF DES TÉMOIGNAGES (CORRECTIF STRICT DU JUMP DE PAGE)
-  const track = document.getElementById('carousel-track');
-  const prevBtn = document.getElementById('carousel-prev-btn');
-  const nextBtn = document.getElementById('carousel-next-btn');
-  const counterDisplay = document.getElementById('carousel-counter-display');
-  const dotsContainer = document.getElementById('carousel-dots-container');
-  const carouselSection = document.getElementById('testimonials-carousel-section');
-
-  if (track) {
-    const slides = Array.from(track.querySelectorAll('.carousel-slide'));
-    const totalSlides = slides.length;
-    let currentIndex = 0;
-    let autoScrollInterval = null;
-    let isUserInteracting = false;
-    let isCarouselVisible = false;
-
-    // Création des points de pagination
-    slides.forEach((_, idx) => {
-      const dot = document.createElement('button');
-      dot.className = `carousel-dot ${idx === 0 ? 'active' : ''}`;
-      dot.setAttribute('aria-label', `Aller au témoignage ${idx + 1}`);
-      dot.addEventListener('click', () => {
-        goToSlide(idx);
-        resetAutoScroll();
-      });
-      dotsContainer.appendChild(dot);
-    });
-
-    const dots = Array.from(dotsContainer.querySelectorAll('.carousel-dot'));
-
-    function updateCarouselUI(index) {
-      currentIndex = index;
-      if (counterDisplay) {
-        counterDisplay.textContent = `Diapositive ${index + 1} sur ${totalSlides}`;
-      }
-      dots.forEach((dot, idx) => {
-        dot.classList.toggle('active', idx === index);
-      });
-    }
-
-    /**
-     * DÉFILEMENT STRICTEMENT INTERNE AU CONTENEUR TRACK
-     * Règle absolue anti-jump : INTERDICTION d'utiliser targetSlide.scrollIntoView()
-     * car scrollIntoView fait sauter toute la fenêtre du navigateur vers le haut !
-     */
-    function goToSlide(index) {
-      if (index < 0) index = 0;
-      if (index >= totalSlides) index = totalSlides - 1;
-      const targetSlide = slides[index];
-      if (targetSlide && track) {
-        const trackRect = track.getBoundingClientRect();
-        const slideRect = targetSlide.getBoundingClientRect();
-        const targetScrollLeft = track.scrollLeft + (slideRect.left - trackRect.left);
-        
-        // Défilement horizontal interne sans aucun impact sur la position verticale de la page
-        track.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
-        updateCarouselUI(index);
-      }
-    }
-
-    if (prevBtn) {
-      prevBtn.addEventListener('click', () => {
-        const nextIdx = (currentIndex - 1 + totalSlides) % totalSlides;
-        goToSlide(nextIdx);
-        resetAutoScroll();
-      });
-    }
-
-    if (nextBtn) {
-      nextBtn.addEventListener('click', () => {
-        const nextIdx = (currentIndex + 1) % totalSlides;
-        goToSlide(nextIdx);
-        resetAutoScroll();
-      });
-    }
-
-    // Détection du swipe tactile manuel
-    track.addEventListener('scroll', () => {
-      const scrollPos = track.scrollLeft;
-      const slideWidth = slides[0].offsetWidth + 20;
-      const approximateIndex = Math.round(scrollPos / slideWidth);
-      if (approximateIndex !== currentIndex && approximateIndex >= 0 && approximateIndex < totalSlides) {
-        updateCarouselUI(approximateIndex);
-      }
-    });
-
-    // IntersectionObserver : Ne faire défiler le carrousel QUE s'il est réellement visible à l'écran !
-    if ('IntersectionObserver' in window && carouselSection) {
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          isCarouselVisible = entry.isIntersecting;
-        });
-      }, { threshold: 0.25 });
-      observer.observe(carouselSection);
-    } else {
-      isCarouselVisible = true;
-    }
-
-    function startAutoScroll() {
-      if (autoScrollInterval) clearInterval(autoScrollInterval);
-      autoScrollInterval = setInterval(() => {
-        // Condition stricte : L'utilisateur n'interagit pas ET le carrousel est visible
-        if (!isUserInteracting && isCarouselVisible) {
-          const nextIdx = (currentIndex + 1) % totalSlides;
-          goToSlide(nextIdx);
-        }
-      }, 4500);
-    }
-
-    function resetAutoScroll() {
-      clearInterval(autoScrollInterval);
-      startAutoScroll();
-    }
-
-    // Pause au survol ou toucher
-    track.addEventListener('mouseenter', () => { isUserInteracting = true; });
-    track.addEventListener('mouseleave', () => { isUserInteracting = false; });
-    track.addEventListener('touchstart', () => { isUserInteracting = true; }, { passive: true });
-    track.addEventListener('touchend', () => {
-      setTimeout(() => { isUserInteracting = false; }, 2500);
-    });
-
-    startAutoScroll();
-  }
-
-  // 3. LECTEUR VIDÉO VERTICAL 9:16 (CLIPS 1 & 2 DÉTAILLÉS)
-  const videoOverlay = document.getElementById('video-overlay-trigger');
-  const videoElement = document.getElementById('ugc-video-element');
-  const clip1 = document.querySelector('.caption-line.clip1');
-  const clip2 = document.querySelector('.caption-line.clip2');
-
-  if (videoOverlay && clip1 && clip2) {
-    videoOverlay.addEventListener('click', () => {
-      const toggleText = videoOverlay.querySelector('.video-sound-toggle span');
-      if (videoElement) {
-        if (videoElement.paused) {
-          videoElement.muted = false;
-          videoElement.play().catch(e => console.log('Autoplay audio blocked:', e));
-          if (toggleText) toggleText.textContent = "Lecture en cours avec le son";
-        } else {
-          videoElement.pause();
-          if (toggleText) toggleText.textContent = "Relancer la vidéo";
-        }
-      }
-      
-      clip1.classList.add('active');
-      clip2.classList.remove('active');
-
-      setTimeout(() => {
-        clip1.classList.remove('active');
-        clip2.classList.add('active');
-      }, 5000);
-    });
-  }
-
-  // 4. ACCORDÉON FAQ ANTI-OBJECTIONS
-  const faqItems = document.querySelectorAll('.faq-item');
-  faqItems.forEach(item => {
-    const question = item.querySelector('.faq-question');
-    question.addEventListener('click', () => {
-      const isOpen = item.classList.contains('open');
-      faqItems.forEach(i => i.classList.remove('open'));
-      if (!isOpen) {
-        item.classList.add('open');
+  scrollBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (checkoutSection) {
+        checkoutSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(() => {
+          if (nameInput) nameInput.focus();
+        }, 350);
       }
     });
   });
+
+  // 2. LECTEUR VIDÉO 20S COMPACT (LECTURE AVEC LE SON AU TAP)
+  const videoElem = document.getElementById('ugc-video-compact');
+  const videoTapBtn = document.getElementById('video-tap-btn');
+
+  if (videoElem && videoTapBtn) {
+    videoTapBtn.addEventListener('click', () => {
+      if (videoElem.paused) {
+        videoElem.muted = false;
+        videoElem.play().catch(e => console.log('Audio autoplay blocked:', e));
+        videoTapBtn.style.opacity = '0.15';
+      } else {
+        videoElem.pause();
+        videoTapBtn.style.opacity = '1';
+      }
+    });
+
+    videoElem.addEventListener('click', () => {
+      if (videoElem.paused) {
+        videoElem.play();
+        videoTapBtn.style.opacity = '0.15';
+      } else {
+        videoElem.pause();
+        videoTapBtn.style.opacity = '1';
+      }
+    });
+  }
+
+  // 3. ACCORDÉON COMPACT DU SOMMAIRE (FERMÉ PAR DÉFAUT)
+  const accordionBox = document.querySelector('.accordion-compact-box');
+  const accordionBtn = document.getElementById('accordion-btn');
+
+  if (accordionBox && accordionBtn) {
+    accordionBtn.addEventListener('click', () => {
+      const isOpen = accordionBox.classList.contains('open');
+      accordionBox.classList.toggle('open');
+      const label = accordionBtn.querySelector('span');
+      if (label) {
+        label.textContent = isOpen 
+          ? "Voir le sommaire et l'aperçu des 4 pages (+)" 
+          : "Masquer le sommaire et l'aperçu (-)";
+      }
+    });
+  }
+
+  // 4. CARROUSEL COMPACT HORIZONTAL DES AVIS (DÉFILEMENT FLUIDE SANS SAUT DE PAGE)
+  const reviewsTrack = document.getElementById('compact-reviews-track');
+  if (reviewsTrack) {
+    let reviewScrollInterval = null;
+    let isInteracting = false;
+    let isVisible = false;
+
+    // Détecte si le carrousel est visible à l'écran pour ne JAMAIS perturber la lecture ou le formulaire
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver((entries) => {
+        isVisible = entries[0].isIntersecting;
+      }, { threshold: 0.1 });
+      observer.observe(reviewsTrack);
+    } else {
+      isVisible = true;
+    }
+
+    function autoScrollReviews() {
+      if (reviewScrollInterval) clearInterval(reviewScrollInterval);
+      reviewScrollInterval = setInterval(() => {
+        if (!isInteracting && isVisible) {
+          const maxScroll = reviewsTrack.scrollWidth - reviewsTrack.clientWidth;
+          if (reviewsTrack.scrollLeft >= maxScroll - 10) {
+            reviewsTrack.scrollTo({ left: 0, behavior: 'smooth' });
+          } else {
+            reviewsTrack.scrollBy({ left: 220, behavior: 'smooth' });
+          }
+        }
+      }, 4000);
+    }
+
+    reviewsTrack.addEventListener('mouseenter', () => { isInteracting = true; });
+    reviewsTrack.addEventListener('mouseleave', () => { isInteracting = false; });
+    reviewsTrack.addEventListener('touchstart', () => { isInteracting = true; }, { passive: true });
+    reviewsTrack.addEventListener('touchend', () => {
+      setTimeout(() => { isInteracting = false; }, 2000);
+    });
+
+    autoScrollReviews();
+  }
 
   // 5. SOUMISSION DU FORMULAIRE DE PAIEMENT EXPRESS DIRECT (0 CLIC)
   function getCookie(name) {
@@ -271,43 +181,5 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
-
-  // 6. NOTIFICATIONS FLOTTANTES DE PREUVE SOCIALE (ZÉRO EMOJI)
-  const socialToast = document.getElementById('social-toast');
-  const toastName = document.getElementById('toast-name');
-  const toastAction = document.getElementById('toast-action');
-  const toastTime = document.getElementById('toast-time');
-
-  const buyers = [
-    { name: "Marc A. (Cotonou)", method: "MTN MoMo", time: "Il y a 2 minutes" },
-    { name: "Awa D. (Abidjan)", method: "Wave", time: "Il y a 5 minutes" },
-    { name: "Ousmane N. (Dakar)", method: "Wave", time: "Il y a 8 minutes" },
-    { name: "Clarisse T. (Douala)", method: "Orange Money", time: "Il y a 3 minutes" },
-    { name: "Koffi M. (Lomé)", method: "Moov Money", time: "Il y a 11 minutes" },
-    { name: "Salif B. (Ouagadougou)", method: "Orange Money", time: "Il y a 6 minutes" }
-  ];
-
-  let buyerIndex = 0;
-
-  function showSocialToast() {
-    if (!socialToast || !toastName) return;
-    const buyer = buyers[buyerIndex % buyers.length];
-    buyerIndex++;
-
-    toastName.textContent = buyer.name;
-    if (toastAction) toastAction.textContent = `vient d'accéder au guide via ${buyer.method}`;
-    if (toastTime) toastTime.textContent = buyer.time;
-
-    socialToast.classList.add('visible');
-
-    setTimeout(() => {
-      socialToast.classList.remove('visible');
-    }, 4500);
-  }
-
-  setTimeout(() => {
-    showSocialToast();
-    setInterval(showSocialToast, 11000);
-  }, 4000);
 
 });
