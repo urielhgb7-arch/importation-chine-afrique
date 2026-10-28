@@ -46,9 +46,9 @@
         </div>
 
         <!-- Bouton direct de secours -->
-        <a id="direct-download-btn" href="https://vouh-digital-shop-0.mymaketou.shop/fr/my-purchases" class="cta-pulse-btn success-btn">
+        <a id="direct-download-btn" href="#" class="cta-pulse-btn success-btn">
           <span>TÉLÉCHARGER MON GUIDE MAINTENANT (ACCÈS DIRECT)</span>
-          <small>Cliquez ici si la redirection ne démarre pas automatiquement</small>
+          <small>Cliquez ici pour accéder à votre guide</small>
         </a>
       </div>
 
@@ -127,10 +127,12 @@
               }, { eventID: eventId });
             }
 
-            // Verrou 4 : Redirection automatique vers l'espace de téléchargement après 1.8 seconde
-            setTimeout(() => {
-              window.location.href = data.downloadUrl || 'https://vouh-digital-shop-0.mymaketou.shop/fr/my-purchases';
-            }, 1800);
+            // Redirection vers le lien de téléchargement si disponible
+            if (data.downloadUrl) {
+              setTimeout(() => {
+                window.location.href = data.downloadUrl;
+              }, 1800);
+            }
 
           } else {
             stateLoading.style.display = 'none';

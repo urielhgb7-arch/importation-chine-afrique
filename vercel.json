@@ -6,8 +6,12 @@
       "destination": "/api/index.js"
     },
     {
+      "source": "/confirmation-achat",
+      "destination": "/confirmation-achat.html"
+    },
+    {
       "source": "/verify-purchase",
-      "destination": "/verify-purchase.html"
+      "destination": "/confirmation-achat.html"
     }
   ]
 }

@@ -163,8 +163,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const data = await res.json();
 
+        // Sauvegarde de l'ID panier dans localStorage pour la page /confirmation-achat
+        if (data.cartId) {
+          try {
+            localStorage.setItem('maketou_cart_id', data.cartId);
+          } catch (e) {
+            console.warn('LocalStorage error:', e);
+          }
+        }
+
         // REDIRECTION EXCLUSIVEMENT VERS LA VRAIE URL MONEROO RETOURNÉE PAR MAKETOU
-        if (data.success && data.redirectUrl) {
+        if ((data.success || data.cartId) && data.redirectUrl) {
           window.location.href = data.redirectUrl;
         } else {
           alert(data.error || "Une erreur est survenue lors de l'initialisation du paiement.");

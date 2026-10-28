@@ -95,11 +95,47 @@ function markPurchaseTrackedAtomically(orderId) {
   return { success: true };
 }
 
+// Récupération de commande par cartId
+function getOrderByCartId(cartId) {
+  const data = readData();
+  for (const id in data.orders) {
+    if (data.orders[id].cartId === cartId || id === cartId) {
+      return data.orders[id];
+    }
+  }
+  return null;
+}
+
+// Verrou atomique de déduplication Purchase par cartId
+function markCartPurchaseTrackedAtomically(cartId) {
+  const data = readData();
+  for (const id in data.orders) {
+    if (data.orders[id].cartId === cartId || id === cartId) {
+      if (data.orders[id].purchase_tracked === 1) {
+        return { success: false, reason: 'already_tracked' };
+      }
+      data.orders[id].purchase_tracked = 1;
+      data.orders[id].tracked_at = Date.now();
+      writeData(data);
+      return { success: true };
+    }
+  }
+  data.orders[cartId] = {
+    cartId,
+    purchase_tracked: 1,
+    tracked_at: Date.now()
+  };
+  writeData(data);
+  return { success: true };
+}
+
 module.exports = {
   initDb,
   getIdempotentOrder,
   saveOrder,
   getOrder,
+  getOrderByCartId,
   updateOrderStatus,
-  markPurchaseTrackedAtomically
+  markPurchaseTrackedAtomically,
+  markCartPurchaseTrackedAtomically
 };

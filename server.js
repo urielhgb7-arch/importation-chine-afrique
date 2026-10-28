@@ -90,22 +90,18 @@ app.post('/api/checkout/create', async (req, res) => {
       });
     }
 
-    // 4. Construction d'une redirectURL HTTPS 100 % valide (Maketou exige https://)
+    // 4. Construction de la redirectURL vers /confirmation-achat
     const orderId = `ORD_${crypto.randomUUID()}`;
     const sig = generateOrderSignature(orderId);
     
     // Détection automatique du nom de domaine actif (ex: https://importation-chine-afrique.aurakadre.com)
     const hostHeader = req.headers['x-forwarded-host'] || req.headers.host || '';
     const protoHeader = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : 'http');
-    const autoDetectedUrl = (protoHeader === 'https' && hostHeader && !hostHeader.includes('localhost')) 
-      ? `https://${hostHeader}` 
-      : '';
+    const isHttps = protoHeader === 'https' && hostHeader && !hostHeader.includes('localhost');
+    const baseUrl = isHttps ? `https://${hostHeader}` : `http://${hostHeader || 'localhost:3000'}`;
     
-    const baseUrl = process.env.APP_BASE_URL || autoDetectedUrl;
-    const isPublicHttps = baseUrl.startsWith('https://') && !baseUrl.includes('votre-domaine') && !baseUrl.includes('localhost');
-    const redirectURL = isPublicHttps
-      ? `${baseUrl.replace(/\/$/, '')}/verify-purchase?orderId=${orderId}&sig=${sig}`
-      : 'https://vouh-digital-shop-0.mymaketou.shop/fr/my-purchases';
+    // Page intermédiaire /confirmation-achat pour la validation et le pixel
+    const redirectURL = `${baseUrl}/confirmation-achat`;
 
     // 5. Payload strict conforme (SANS customerPrice pour éviter l'erreur 422 !)
     const maketouPayload = {
@@ -124,8 +120,8 @@ app.post('/api/checkout/create', async (req, res) => {
       }
     };
 
-    if (isPublicHttps) {
-      maketouPayload.webhookUrl = `${baseUrl.replace(/\/$/, '')}/api/webhooks/maketou`;
+    if (isHttps) {
+      maketouPayload.webhookUrl = `${baseUrl}/api/webhooks/maketou`;
     }
 
     console.log('[Maketou Checkout] Envoi payload :', { email: cleanEmail, phone: cleanPhone, redirectURL });
@@ -243,13 +239,106 @@ app.get('/api/verify-order-status', async (req, res) => {
       cartId: order.cartId,
       amount: process.env.PRODUCT_PRICE_XOF || 2500,
       currency: 'XOF',
-      downloadUrl: process.env.MAKETOU_DOWNLOAD_REDIRECT_URL || 'https://vouh-digital-shop-0.mymaketou.shop/fr/my-purchases',
+      downloadUrl: cartStatus === 'completed' ? (order.downloadUrl || null) : null,
       retryUrl: order.redirectUrl
     });
 
   } catch (error) {
     console.error('[Verify Order Error]', error);
     return res.status(500).json({ success: false, error: 'Erreur lors de la vérification' });
+  }
+});
+
+/**
+ * ROUTE DÉDIÉE : GET /api/checkout/verify?cartId=...
+ * Vérification pour la page intermédiaire /confirmation-achat
+ * Compatible avec l'Outil de configuration d'événements Meta (?setup_pixel=1)
+ */
+app.get('/api/checkout/verify', async (req, res) => {
+  try {
+    const { cartId, setup_pixel } = req.query;
+
+    // MODE A : Permet à l'Outil de configuration d'événements Meta d'afficher la page et le bouton
+    if (setup_pixel === '1') {
+      return res.status(200).json({ verified: true, setupMode: true, alreadyTracked: false });
+    }
+
+    if (!cartId) {
+      return res.status(400).json({ verified: false, error: 'cartId requis' });
+    }
+
+    const apiKey = process.env.MAKETOU_API_KEY || 'msk_c650508aa6e29d8d7da5a9c2ea05cd20d081f29a89566fe1e3da0b79c080a4c8';
+    
+    // Appel sécurisé à l'API Maketou
+    let cart = null;
+    try {
+      const maketouRes = await fetch(`https://api.maketou.net/api/v1/stores/cart/${encodeURIComponent(cartId)}`, {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      const cartData = await maketouRes.json();
+      cart = cartData?.cart || cartData;
+    } catch (apiErr) {
+      console.error('[Maketou Cart Verify Error]', apiErr.message);
+    }
+
+    if (!cart || cart.status !== 'completed') {
+      return res.status(200).json({ 
+        verified: false, 
+        status: cart?.status || 'waiting_payment' 
+      });
+    }
+
+    // Récupération ou création des métadonnées de commande
+    const order = db.getOrderByCartId(cartId) || db.getOrder(cartId) || {
+      cartId,
+      email: cart.email || '',
+      phone: cart.phone || '',
+      firstName: cart.firstName || '',
+      lastName: cart.lastName || '',
+      productDocumentId: cart.productDocumentId || process.env.PRODUCT_DOCUMENT_ID,
+      purchase_tracked: 0
+    };
+
+    // Verrou atomique de déduplication Purchase CAPI
+    const lockResult = db.markCartPurchaseTrackedAtomically(cartId);
+    const alreadyTracked = !lockResult.success;
+
+    if (!alreadyTracked) {
+      const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+      const userAgent = req.headers['user-agent'];
+      const host = req.headers['x-forwarded-host'] || req.headers.host || '';
+      const eventSourceUrl = `https://${host}/confirmation-achat`;
+
+      await sendMetaPurchaseEvent({
+        cartId,
+        email: cart.email || order.email,
+        phone: cart.phone || order.phone,
+        firstName: cart.firstName || order.firstName,
+        lastName: cart.lastName || order.lastName,
+        clientIp,
+        userAgent,
+        fbp: order.fbp,
+        fbc: order.fbc,
+        amount: process.env.PRODUCT_PRICE_XOF || 2500,
+        currency: 'XOF',
+        eventSourceUrl
+      });
+    }
+
+    // Extraction de tout lien de téléchargement retourné par Maketou
+    const maketouDownloadUrl = cart.downloadUrl || cart.fileUrl || cart.receiptUrl || cart.orderUrl || null;
+
+    return res.status(200).json({
+      verified: true,
+      alreadyTracked,
+      eventId: `pur_${cartId}`,
+      customerEmail: cart.email || order.email,
+      maketouDownloadUrl
+    });
+
+  } catch (e) {
+    console.error('[API Checkout Verify Error]', e);
+    return res.status(500).json({ verified: false, error: e.message });
   }
 });
 
@@ -289,9 +378,14 @@ app.post('/api/webhooks/maketou', (req, res) => {
   return res.status(200).json({ received: true });
 });
 
-// Servir la page de vérification /verify-purchase
+// Servir la page intermédiaire /confirmation-achat
+app.get('/confirmation-achat', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'confirmation-achat.html'));
+});
+
+// Redirection rétro-compatible /verify-purchase vers /confirmation-achat
 app.get('/verify-purchase', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'verify-purchase.html'));
+  res.sendFile(path.join(__dirname, 'public', 'confirmation-achat.html'));
 });
 
 // Démarrage du serveur si exécuté directement (Local, Render, Docker)

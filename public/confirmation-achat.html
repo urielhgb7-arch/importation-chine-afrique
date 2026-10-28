@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Confirmation d'Achat — Guide Importation Chine-Afrique</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Meta Pixel Code -->
+  <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1697536258749199');
+    fbq('track', 'PageView');
+  </script>
+  <noscript>
+    <img height="1" width="1" style="display:none" 
+         src="https://www.facebook.com/tr?id=1697536258749199&ev=PageView&noscript=1"/>
+  </noscript>
+
+  <style>
+    .confirm-page-wrap {
+      min-height: 100vh;
+      background: #090d16;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: #ffffff;
+    }
+    .confirm-card {
+      background: #111827;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 20px;
+      max-width: 520px;
+      width: 100%;
+      padding: 32px 24px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 50px rgba(16, 185, 129, 0.15);
+    }
+    .confirm-badge-icon {
+      width: 72px;
+      height: 72px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 2px solid #10b981;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      color: #10b981;
+    }
+    .confirm-badge-icon svg {
+      width: 40px;
+      height: 40px;
+    }
+    .confirm-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 12px;
+      line-height: 1.25;
+    }
+    .confirm-title span {
+      color: #10b981;
+    }
+    .confirm-desc {
+      font-size: 15px;
+      color: #94a3b8;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    .confirm-box-info {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+    .confirm-box-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .confirm-box-item:last-child {
+      border-bottom: none;
+    }
+    .confirm-box-item .label {
+      color: #94a3b8;
+    }
+    .confirm-box-item .val {
+      font-weight: 700;
+      color: #ffffff;
+    }
+    .confirm-btn-action {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 800;
+      text-decoration: none;
+      padding: 16px 20px;
+      border-radius: 14px;
+      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+      cursor: pointer;
+      border: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .confirm-btn-action:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 30px rgba(16, 185, 129, 0.5);
+    }
+    .confirm-btn-action small {
+      font-size: 11px;
+      font-weight: 600;
+      opacity: 0.9;
+      margin-top: 4px;
+    }
+    .loading-spinner {
+      width: 44px;
+      height: 44px;
+      border: 4px solid rgba(16, 185, 129, 0.2);
+      border-top-color: #10b981;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 20px auto;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .setup-mode-notice {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #f59e0b;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      margin-bottom: 20px;
+      font-weight: 600;
+      text-align: left;
+    }
+  </style>
+</head>
+<body class="confirm-page-body">
+
+  <div class="confirm-page-wrap">
+    <div class="confirm-card" id="confirm-card">
+      
+      <!-- ÉTAT 1 : CHARGEMENT / VÉRIFICATION EN COURS -->
+      <div id="view-loading">
+        <div class="loading-spinner"></div>
+        <h2 class="confirm-loading-title" style="font-size: 20px; font-weight: 700; margin-bottom: 10px;">Vérification de votre paiement...</h2>
+        <p class="confirm-desc">Connexion sécurisée en cours avec Maketou pour valider votre commande.</p>
+      </div>
+
+      <!-- ÉTAT 2 : SUCCÈS OU MODE CONFIGURATION PIXEL META -->
+      <div id="view-success" style="display: none;">
+        
+        <div id="setup-notice" class="setup-mode-notice" style="display: none;">
+          ⚡ <strong>Mode Configuration Pixel Meta actif :</strong> Vous pouvez cibler l'URL <code>/confirmation-achat</code> ou cliquer sur le bouton vert ci-dessous dans l'outil Meta pour enregistrer l'événement <em>Achat (Purchase)</em>.
+        </div>
+
+        <div class="confirm-badge-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+
+        <h1 class="confirm-title" id="success-title">PAIEMENT DE <span>2 500 FCFA</span> CONFIRMÉ</h1>
+        <p class="confirm-desc" id="confirm-user-msg">
+          Félicitations ! Votre paiement a été validé avec succès. Votre guide numérique est prêt.
+        </p>
+
+        <div class="confirm-box-info">
+          <div class="confirm-box-item">
+            <span class="label">Produit :</span>
+            <span class="val">Guide Importation Chine-Afrique</span>
+          </div>
+          <div class="confirm-box-item">
+            <span class="label">Montant réglé :</span>
+            <span class="val" style="color: #10b981;">2 500 FCFA</span>
+          </div>
+          <div class="confirm-box-item">
+            <span class="label">Statut :</span>
+            <span class="val" style="color: #10b981;">Validé & Livré</span>
+          </div>
+          <div class="confirm-box-item" id="row-email" style="display: none;">
+            <span class="label">Email de livraison :</span>
+            <span class="val" id="val-email" style="font-size: 13px;"></span>
+          </div>
+        </div>
+
+        <!-- BOUTON UNIQUE FIXE POUR CONFIGURATION MANUELLE DU PIXEL & ACCÈS TÉLÉCHARGEMENT -->
+        <a id="btn-achat-confirme" href="#" class="confirm-btn-action" target="_blank" rel="noopener noreferrer">
+          <span>CONFIRMER MON ACHAT ET ACCÉDER À MON GUIDE SUR MAKETOU</span>
+          <small>Cliquez ici pour ouvrir votre espace de téléchargement sécurisé</small>
+        </a>
+
+        <p style="font-size: 12px; color: #64748b; margin-top: 18px;">
+          Un email de confirmation contenant votre accès direct a également été envoyé par Maketou.
+        </p>
+
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    (async function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const isSetupPixel = urlParams.get('setup_pixel') === '1' || urlParams.get('setup') === '1';
+      
+      const viewLoading = document.getElementById('view-loading');
+      const viewSuccess = document.getElementById('view-success');
+      const setupNotice = document.getElementById('setup-notice');
+      const btnAchat = document.getElementById('btn-achat-confirme');
+      const rowEmail = document.getElementById('row-email');
+      const valEmail = document.getElementById('val-email');
+      const confirmUserMsg = document.getElementById('confirm-user-msg');
+
+      // MODE A — CONFIGURATION MANUELLE DU PIXEL DANS L'OUTIL META (?setup_pixel=1)
+      if (isSetupPixel) {
+        viewLoading.style.display = 'none';
+        viewSuccess.style.display = 'block';
+        setupNotice.style.display = 'block';
+        btnAchat.href = '#';
+        btnAchat.addEventListener('click', function(e) {
+          e.preventDefault();
+          console.log('[Meta Setup Tool] Clic sur #btn-achat-confirme détecté !');
+        });
+        return;
+      }
+
+      // MODE B — VISITEUR RÉEL APRÈS PAIEMENT
+      // Lecture du cartId dans l'URL ou dans le localStorage
+      const cartId = urlParams.get('cartId') || 
+                     urlParams.get('cart_id') || 
+                     urlParams.get('orderId') || 
+                     localStorage.getItem('maketou_cart_id');
+
+      // Si aucun cartId n'est présent, redirection immédiate vers l'accueil
+      if (!cartId) {
+        window.location.replace('/');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/checkout/verify?cartId=${encodeURIComponent(cartId)}`);
+        const data = await res.json();
+
+        // Si le paiement n'est pas validé : expulsion immédiate sans bouton
+        if (!data || !data.verified) {
+          window.location.replace('/');
+          return;
+        }
+
+        // Paiement validé avec succès
+        viewLoading.style.display = 'none';
+        viewSuccess.style.display = 'block';
+
+        if (data.customerEmail) {
+          rowEmail.style.display = 'flex';
+          valEmail.textContent = data.customerEmail;
+          confirmUserMsg.textContent = `Félicitations ! Votre paiement a été validé. Le lien d'accès a également été envoyé à ${data.customerEmail}.`;
+        }
+
+        // Configuration de la destination du bouton Maketou
+        if (data.maketouDownloadUrl) {
+          btnAchat.href = data.maketouDownloadUrl;
+        } else {
+          // Si Maketou livre par email, le bouton dirige vers la consultation d'email
+          btnAchat.href = `mailto:${data.customerEmail || ''}`;
+          btnAchat.querySelector('small').textContent = 'Consultez votre boîte mail pour ouvrir votre guide PDF';
+        }
+
+        // DÉCLENCHEMENT DE L'ÉVÉNEMENT PURCHASE CÔTÉ NAVIGATEUR (DÉDUPLIQUÉ VIA eventID)
+        const eventId = data.eventId || `pur_${cartId}`;
+        console.log('[Meta Pixel] Déclenchement événement Purchase :', eventId);
+        fbq('track', 'Purchase', {
+          value: 2500,
+          currency: 'XOF',
+          content_ids: ['d3acfce0-ae5e-4751-876c-abba88835dd5'],
+          content_type: 'product',
+          num_items: 1
+        }, { eventID: eventId });
+
+        // Nettoyage du panier stocké
+        try {
+          localStorage.removeItem('maketou_cart_id');
+        } catch (e) {}
+
+      } catch (err) {
+        console.error('[Verification Error]', err);
+        window.location.replace('/');
+      }
+    })();
+  </script>
+</body>
+</html>
