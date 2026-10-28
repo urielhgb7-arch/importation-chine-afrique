@@ -208,10 +208,15 @@
           </div>
         </div>
 
+        <!-- BANNIÈRE DE REDIRECTION AUTOMATIQUE ÉCLAIR -->
+        <div id="redirect-banner" style="display: none; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 12px; padding: 12px 16px; margin-bottom: 20px; font-size: 13px; color: #10b981; text-align: center; font-weight: 700;">
+          🚀 Paiement validé ! Redirection automatique vers votre espace de téléchargement dans <span id="countdown-val">1s</span>...
+        </div>
+
         <!-- BOUTON UNIQUE FIXE POUR CONFIGURATION MANUELLE DU PIXEL & ACCÈS TÉLÉCHARGEMENT -->
         <a id="btn-achat-confirme" href="#" class="confirm-btn-action" target="_blank" rel="noopener noreferrer">
           <span>CONFIRMER MON ACHAT ET ACCÉDER À MON GUIDE SUR MAKETOU</span>
-          <small>Cliquez ici pour ouvrir votre espace de téléchargement sécurisé</small>
+          <small>Cliquez ici si la redirection ne démarre pas automatiquement</small>
         </a>
 
         <p style="font-size: 12px; color: #64748b; margin-top: 18px;">
@@ -282,15 +287,6 @@
           confirmUserMsg.textContent = `Félicitations ! Votre paiement a été validé. Le lien d'accès a également été envoyé à ${data.customerEmail}.`;
         }
 
-        // Configuration de la destination du bouton Maketou
-        if (data.maketouDownloadUrl) {
-          btnAchat.href = data.maketouDownloadUrl;
-        } else {
-          // Si Maketou livre par email, le bouton dirige vers la consultation d'email
-          btnAchat.href = `mailto:${data.customerEmail || ''}`;
-          btnAchat.querySelector('small').textContent = 'Consultez votre boîte mail pour ouvrir votre guide PDF';
-        }
-
         // DÉCLENCHEMENT DE L'ÉVÉNEMENT PURCHASE CÔTÉ NAVIGATEUR (DÉDUPLIQUÉ VIA eventID)
         const eventId = data.eventId || `pur_${cartId}`;
         console.log('[Meta Pixel] Déclenchement événement Purchase :', eventId);
@@ -301,6 +297,24 @@
           content_type: 'product',
           num_items: 1
         }, { eventID: eventId });
+
+        // Configuration de la destination Maketou
+        const targetUrl = data.maketouDownloadUrl;
+        const redirectBanner = document.getElementById('redirect-banner');
+
+        if (targetUrl) {
+          btnAchat.href = targetUrl;
+          if (redirectBanner) redirectBanner.style.display = 'block';
+
+          // Redirection automatique éclair (Option 1) après 1.2s
+          setTimeout(() => {
+            window.location.href = targetUrl;
+          }, 1200);
+        } else {
+          // Si Maketou livre par email, le bouton ouvre la boîte mail
+          btnAchat.href = `mailto:${data.customerEmail || ''}`;
+          btnAchat.querySelector('small').textContent = 'Consultez votre boîte mail pour ouvrir votre guide PDF';
+        }
 
         // Nettoyage du panier stocké
         try {

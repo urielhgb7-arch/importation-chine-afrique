@@ -325,8 +325,13 @@ app.get('/api/checkout/verify', async (req, res) => {
       });
     }
 
-    // Extraction de tout lien de téléchargement retourné par Maketou
-    const maketouDownloadUrl = cart.downloadUrl || cart.fileUrl || cart.receiptUrl || cart.orderUrl || null;
+    // Extraction de tout lien de téléchargement retourné par Maketou ou configuré
+    const maketouDownloadUrl = cart.downloadUrl 
+      || cart.fileUrl 
+      || cart.receiptUrl 
+      || cart.orderUrl 
+      || process.env.MAKETOU_DOWNLOAD_URL 
+      || null;
 
     return res.status(200).json({
       verified: true,
