@@ -308,7 +308,7 @@ app.get('/api/checkout/verify', async (req, res) => {
         alreadyTracked: false,
         eventId: `pur_${cartId}`,
         customerEmail: 'test@admin.com',
-        maketouDownloadUrl: process.env.MAKETOU_DOWNLOAD_URL || 'https://api.maketou.net',
+        maketouDownloadUrl: process.env.MAKETOU_DOWNLOAD_URL || 'https://vouh-digital-shop-0.mymaketou.shop',
         isSandbox: true
       });
     }
@@ -377,7 +377,7 @@ app.get('/api/checkout/verify', async (req, res) => {
       || cart.receiptUrl 
       || cart.orderUrl 
       || process.env.MAKETOU_DOWNLOAD_URL 
-      || null;
+      || 'https://vouh-digital-shop-0.mymaketou.shop';
 
     return res.status(200).json({
       verified: true,
