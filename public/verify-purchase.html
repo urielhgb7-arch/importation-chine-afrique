@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Vérification du Paiement — Guide Importation Chine-Afrique</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Meta Pixel Code -->
+  <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1697536258749199');
+  </script>
+</head>
+<body class="verify-page-body">
+
+  <div class="verify-container">
+    <div class="verify-card" id="verify-card">
+      
+      <!-- ÉTAT 1 : CHARGEMENT & VÉRIFICATION HMAC + STATUT MAKETOU -->
+      <div id="state-loading">
+        <div class="spinner-circle"></div>
+        <h2>Vérification de votre paiement Mobile Money...</h2>
+        <p>Connexion sécurisée avec le serveur Maketou en cours. Veuillez patienter un instant.</p>
+      </div>
+
+      <!-- ÉTAT 2 : PAIEMENT CONFIRMÉ (VERROUS 3 & 4) -->
+      <div id="state-success" style="display:none;">
+        <div class="success-icon-badge">✅</div>
+        <h2>Paiement Confirmé !</h2>
+        <p class="order-confirmed-text">Félicitations, votre commande a été validée avec succès.</p>
+        
+        <div class="redirect-countdown-box">
+          <span class="icon">🚀</span>
+          <span>Paiement confirmé ! Préparation de votre téléchargement... Redirection automatique dans <strong id="countdown-text">1.8s</strong></span>
+        </div>
+
+        <!-- Bouton direct de secours -->
+        <a id="direct-download-btn" href="https://vouh-digital-shop-0.mymaketou.shop/fr/my-purchases" class="cta-pulse-btn success-btn">
+          <span>TÉLÉCHARGER MON GUIDE MAINTENANT (ACCÈS DIRECT)</span>
+          <small>Cliquez ici si la redirection ne démarre pas automatiquement</small>
+        </a>
+      </div>
+
+      <!-- ÉTAT 3 : EN ATTENTE OU ÉCHEC DU PAIEMENT -->
+      <div id="state-pending" style="display:none;">
+        <div class="pending-icon-badge">⏳</div>
+        <h2>Paiement en attente de confirmation</h2>
+        <p id="pending-msg">Votre opérateur Mobile Money n'a pas encore validé la transaction ou le délai a expiré.</p>
+        
+        <div class="retry-actions">
+          <button id="refresh-status-btn" class="cta-pulse-btn secondary-btn" type="button">
+            🔄 Réactualiser le statut
+          </button>
+          <a id="retry-payment-link" href="/" class="cta-pulse-btn">
+            💳 Relancer le paiement (2 500 FCFA)
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    (async function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const orderId = urlParams.get('orderId');
+      const sig = urlParams.get('sig');
+
+      const stateLoading = document.getElementById('state-loading');
+      const stateSuccess = document.getElementById('state-success');
+      const statePending = document.getElementById('state-pending');
+      const directDownloadBtn = document.getElementById('direct-download-btn');
+      const retryPaymentLink = document.getElementById('retry-payment-link');
+
+      if (!orderId || !sig) {
+        stateLoading.style.display = 'none';
+        statePending.style.display = 'block';
+        document.getElementById('pending-msg').textContent = "Signature de confirmation absente ou invalide. Veuillez recommencer depuis le formulaire.";
+        return;
+      }
+
+      async function verifyOrder() {
+        try {
+          const res = await fetch(`/api/verify-order-status?orderId=${encodeURIComponent(orderId)}&sig=${encodeURIComponent(sig)}`);
+          const data = await res.json();
+
+          if (data.success && data.isCompleted) {
+            stateLoading.style.display = 'none';
+            statePending.style.display = 'none';
+            stateSuccess.style.display = 'block';
+
+            if (data.downloadUrl) {
+              directDownloadBtn.href = data.downloadUrl;
+            }
+
+            // Verrou 3 : Déclenchement unique du Pixel navigateur dédupliqué avec le CAPI (eventID: 'pur_' + cartId)
+            if (data.triggerPixel) {
+              const eventId = `pur_${data.cartId}`;
+              console.log('[Meta Andromeda] Déclenchement Pixel Purchase navigateur :', eventId);
+              fbq('track', 'Purchase', {
+                value: 2500,
+                currency: 'XOF',
+                content_ids: ['d3acfce0-ae5e-4751-876c-abba88835dd5'],
+                content_type: 'product',
+                num_items: 1
+              }, { eventID: eventId });
+            }
+
+            // Verrou 4 : Redirection automatique vers l'espace de téléchargement après 1.8 seconde
+            setTimeout(() => {
+              window.location.href = data.downloadUrl || 'https://vouh-digital-shop-0.mymaketou.shop/fr/my-purchases';
+            }, 1800);
+
+          } else {
+            stateLoading.style.display = 'none';
+            stateSuccess.style.display = 'none';
+            statePending.style.display = 'block';
+            if (data.retryUrl) {
+              retryPaymentLink.href = data.retryUrl;
+            }
+          }
+        } catch (err) {
+          console.error(err);
+          stateLoading.style.display = 'none';
+          statePending.style.display = 'block';
+        }
+      }
+
+      document.getElementById('refresh-status-btn').addEventListener('click', () => {
+        statePending.style.display = 'none';
+        stateLoading.style.display = 'block';
+        verifyOrder();
+      });
+
+      verifyOrder();
+    })();
+  </script>
+</body>
+</html>

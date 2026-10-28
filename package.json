@@ -1,0 +1,19 @@
+{
+  "name": "tunnel-importation-chine-afrique",
+  "version": "1.0.0",
+  "description": "Tunnel de Vente Mobile-First Maketou API + Meta Andromeda",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test:design": "node verify-design.js"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.1"
+  }
+}
