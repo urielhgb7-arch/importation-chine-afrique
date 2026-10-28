@@ -178,6 +178,23 @@
           ⚡ <strong>Mode Configuration Pixel Meta actif :</strong> Vous pouvez cibler l'URL <code>/confirmation-achat</code> ou cliquer sur le bouton vert ci-dessous dans l'outil Meta pour enregistrer l'événement <em>Achat (Purchase)</em>.
         </div>
 
+        <!-- ENCART VISUEL SPÉCIAL POUR TEST SANDBOX RÉUSSI -->
+        <div id="sandbox-notice" style="display: none; background: rgba(16, 185, 129, 0.12); border: 2px solid #10b981; border-radius: 14px; padding: 16px 20px; margin-bottom: 22px; text-align: left; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.2);">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+            <span style="font-size: 24px;">🎉</span>
+            <h3 style="margin: 0; color: #10b981; font-size: 16px; font-weight: 800; letter-spacing: -0.3px;">TEST DU PARCOURS CLIENT RÉUSSI À 100 % !</h3>
+          </div>
+          <p style="font-size: 13px; color: #cbd5e1; margin: 0 0 10px 0; line-height: 1.5;">
+            Toutes les étapes du tunnel ont fonctionné sans débourser 1 centime :
+          </p>
+          <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #e2e8f0; line-height: 1.8;">
+            <li>✅ <strong>Formulaire de commande :</strong> Données saisies et validées avec succès</li>
+            <li>✅ <strong>Pixel Meta :</strong> Événement <code>Purchase (2 500 FCFA)</code> déclenché</li>
+            <li>✅ <strong>Sas de vérification :</strong> Session vérifiée et sécurisée</li>
+            <li>ℹ️ <strong>En production réelle :</strong> Dès validation du paiement Mobile Money, Maketou redirige le client vers sa page officielle de remerciement et téléchargement.</li>
+          </ul>
+        </div>
+
         <div class="confirm-badge-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="20 6 9 17 4 12"></polyline>
@@ -301,19 +318,31 @@
         // Configuration de la destination Maketou
         const targetUrl = data.maketouDownloadUrl;
         const redirectBanner = document.getElementById('redirect-banner');
+        const sandboxNotice = document.getElementById('sandbox-notice');
+        const isSandbox = Boolean(data.isSandbox || urlParams.get('sandbox') === '1');
 
-        if (targetUrl) {
-          btnAchat.href = targetUrl;
-          if (redirectBanner) redirectBanner.style.display = 'block';
-
-          // Redirection automatique éclair (Option 1) après 1.2s
-          setTimeout(() => {
-            window.location.href = targetUrl;
-          }, 1200);
+        if (isSandbox) {
+          if (sandboxNotice) sandboxNotice.style.display = 'block';
+          if (redirectBanner) {
+            redirectBanner.style.display = 'block';
+            redirectBanner.style.background = 'rgba(59, 130, 246, 0.15)';
+            redirectBanner.style.borderColor = 'rgba(59, 130, 246, 0.4)';
+            redirectBanner.style.color = '#60a5fa';
+            redirectBanner.innerHTML = '🧪 <strong>Mode Test Sandbox Validé :</strong> Vous êtes sur l’écran de confirmation. Cliquez sur le bouton vert ci-dessous pour tester l’accès vers votre boutique Maketou.';
+          }
+          if (targetUrl) btnAchat.href = targetUrl;
         } else {
-          // Si Maketou livre par email, le bouton ouvre la boîte mail
-          btnAchat.href = `mailto:${data.customerEmail || ''}`;
-          btnAchat.querySelector('small').textContent = 'Consultez votre boîte mail pour ouvrir votre guide PDF';
+          // En production réelle : redirection automatique vers la page de téléchargement Maketou
+          if (targetUrl) {
+            btnAchat.href = targetUrl;
+            if (redirectBanner) redirectBanner.style.display = 'block';
+            setTimeout(() => {
+              window.location.href = targetUrl;
+            }, 1200);
+          } else {
+            btnAchat.href = `mailto:${data.customerEmail || ''}`;
+            btnAchat.querySelector('small').textContent = 'Consultez votre boîte mail pour ouvrir votre guide PDF';
+          }
         }
 
         // Nettoyage du panier stocké
