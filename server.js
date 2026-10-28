@@ -286,12 +286,17 @@ app.get('/verify-purchase', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'verify-purchase.html'));
 });
 
-// Démarrage du serveur
-app.listen(PORT, () => {
-  db.initDb();
-  console.log(`=======================================================`);
-  console.log(`🚀 Tunnel Maketou + Meta Andromeda actif sur le port ${PORT}`);
-  console.log(`🔗 URL locale : http://localhost:${PORT}`);
-  console.log(`💰 Produit : ${process.env.PRODUCT_DOCUMENT_ID} (2500 FCFA)`);
-  console.log(`=======================================================`);
-});
+// Démarrage du serveur si exécuté directement (Local, Render, Docker)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    db.initDb();
+    console.log(`=======================================================`);
+    console.log(`🚀 Tunnel Maketou + Meta Andromeda actif sur le port ${PORT}`);
+    console.log(`🔗 URL locale : http://localhost:${PORT}`);
+    console.log(`💰 Produit : ${process.env.PRODUCT_DOCUMENT_ID} (2500 FCFA)`);
+    console.log(`=======================================================`);
+  });
+}
+
+// Export pour le runtime Serverless Vercel
+module.exports = app;
