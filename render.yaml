@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: importation-chine-afrique
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: MAKETOU_API_KEY
+        sync: false
+      - key: META_PIXEL_ID
+        sync: false
+      - key: META_ACCESS_TOKEN
+        sync: false
+      - key: VERIFY_TOKEN_SECRET
+        sync: false
+      - key: STORE_URL
+        sync: false

@@ -6,7 +6,9 @@
 const fs = require('fs');
 const path = require('path');
 
-const DB_FILE = path.join(__dirname, 'orders_store.json');
+const DB_FILE = process.env.VERCEL 
+  ? path.join('/tmp', 'orders_store.json') 
+  : path.join(__dirname, 'orders_store.json');
 
 function initDb() {
   if (!fs.existsSync(DB_FILE)) {
