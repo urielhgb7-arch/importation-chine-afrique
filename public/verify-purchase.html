@@ -83,6 +83,16 @@
       const directDownloadBtn = document.getElementById('direct-download-btn');
       const retryPaymentLink = document.getElementById('retry-payment-link');
 
+      const isDemo = urlParams.get('demo') === 'success';
+
+      if (isDemo) {
+        stateLoading.style.display = 'none';
+        statePending.style.display = 'none';
+        stateSuccess.style.display = 'block';
+        document.querySelector('.redirect-countdown-box span:last-child').textContent = "Mode Démonstration : Votre paiement est validé ! Cliquez sur le bouton ci-dessous pour accéder au guide.";
+        return;
+      }
+
       if (!orderId || !sig) {
         stateLoading.style.display = 'none';
         statePending.style.display = 'block';
