@@ -8,6 +8,7 @@
     "test:design": "node verify-design.js"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
