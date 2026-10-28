@@ -47,9 +47,46 @@ function verifyOrderSignature(orderId, signature) {
   }
 }
 
+// Secret HMAC pour le téléchargement sécurisé du fichier
+const DOWNLOAD_TOKEN_SECRET = process.env.DOWNLOAD_TOKEN_SECRET || 'maketou_andromeda_hmac_secret_2026_x99';
+
+function generateDownloadToken(orderId) {
+  return crypto.createHmac('sha256', DOWNLOAD_TOKEN_SECRET).update(String(orderId)).digest('hex');
+}
+
+function verifyDownloadToken(orderId, token) {
+  if (!orderId || !token) return false;
+  try {
+    const expected = generateDownloadToken(orderId);
+    return crypto.timingSafeEqual(Buffer.from(token, 'hex'), Buffer.from(expected, 'hex'));
+  } catch (err) {
+    return false;
+  }
+}
+
+// Mise en cache mémoire du buffer PDF depuis Google Drive pour téléchargement ultra-rapide (< 5ms)
+let cachedPdfBuffer = null;
+
+async function getGuidePdfBuffer() {
+  if (cachedPdfBuffer && cachedPdfBuffer.length > 0) {
+    return cachedPdfBuffer;
+  }
+  const fileId = process.env.GOOGLE_DRIVE_FILE_ID || '1S-hwHdXy6qUSVHlP3W0YgGiUBiIp7JhW';
+  const url = `https://drive.google.com/uc?export=download&id=${fileId}`;
+  console.log('[Drive Stream] Récupération du guide PDF depuis Google Drive...');
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Échec récupération Google Drive (HTTP ${res.status})`);
+  }
+  const arrayBuffer = await res.arrayBuffer();
+  cachedPdfBuffer = Buffer.from(arrayBuffer);
+  console.log(`[Drive Stream] Guide PDF mis en mémoire cache avec succès (${cachedPdfBuffer.length} octets).`);
+  return cachedPdfBuffer;
+}
+
 /**
  * ROUTE 1 : POST /api/checkout/create
- * Verrou 1 d'idempotence atomique (10 minutes) & Appel sécurisé à Maketou sans customerPrice
+ * Initialise le paiement Maketou & génère le jeton de téléchargement sécurisé
  */
 app.post('/api/checkout/create', async (req, res) => {
   try {
@@ -62,82 +99,29 @@ app.post('/api/checkout/create', async (req, res) => {
 
     const productDocumentId = process.env.PRODUCT_DOCUMENT_ID || 'd3acfce0-ae5e-4751-876c-abba88835dd5';
 
-    // 1. Découpage automatique et inratable du Nom Complet en firstName + lastName
+    // 1. Découpage du Nom Complet en firstName + lastName
     const parts = String(fullName || '').trim().split(/\s+/).filter(Boolean);
     const firstName = parts[0] || 'Client';
     const lastName = parts.slice(1).join(' ') || 'Acheteur';
 
-    // 2. Nettoyage strict du téléphone au format international (+229...)
+    // 2. Nettoyage du téléphone au format international (+229...)
     const cleanPhone = '+' + String(phone || '').replace(/[^0-9]/g, '');
     const cleanEmail = String(email || '').trim().toLowerCase();
 
-    // 2.1 MODE SANDBOX SÉCURISÉ : Permet à l'administrateur de tester le parcours complet sans payer
-    // S'active UNIQUEMENT si l'email se termine par @test.com ou est test@admin.com
-    const isSandboxTest = cleanEmail === 'test@admin.com' || cleanEmail.endsWith('@test.com');
-    if (isSandboxTest) {
-      const testCartId = `test_sandbox_${Date.now()}`;
-      const hostHeader = req.headers['x-forwarded-host'] || req.headers.host || '';
-      const protoHeader = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : 'http');
-      const isHttps = protoHeader === 'https' && hostHeader && !hostHeader.includes('localhost');
-      const baseUrl = isHttps ? `https://${hostHeader}` : `http://${hostHeader || 'localhost:3000'}`;
-
-      db.saveOrder({
-        internalOrderId: testCartId,
-        cartId: testCartId,
-        email: cleanEmail,
-        phone: cleanPhone,
-        firstName,
-        lastName,
-        redirectUrl: `${baseUrl}/confirmation-achat?cartId=${testCartId}&sandbox=1`,
-        idempotencyKey: `test_${testCartId}`,
-        fbp: req.cookies?.['_fbp'] || '',
-        fbc: req.cookies?.['_fbc'] || '',
-        cached_status: 'completed'
-      });
-
-      console.log(`[Sandbox Test] Parcours test déclenché pour ${cleanEmail} (${testCartId})`);
-      return res.status(200).json({
-        success: true,
-        cartId: testCartId,
-        redirectUrl: `${baseUrl}/confirmation-achat?cartId=${testCartId}&sandbox=1`,
-        orderId: testCartId,
-        isSandbox: true
-      });
-    }
-
-    // 3. Calcul de la clé d'idempotence
-    const timeSlice = Math.floor(Date.now() / (10 * 60 * 1000));
-    const idempotencyKey = clientKey || crypto.createHash('sha256')
-      .update(`${productDocumentId}_${cleanEmail}_${cleanPhone}_${timeSlice}`)
-      .digest('hex');
-
-    // Vérifier si une commande existe déjà pour cette clé
-    const existingOrder = db.getIdempotentOrder(idempotencyKey);
-    if (existingOrder && existingOrder.redirectUrl) {
-      console.log(`[Idempotence] Commande existante réutilisée pour ${cleanEmail} (${existingOrder.cartId})`);
-      return res.status(200).json({
-        success: true,
-        cartId: existingOrder.cartId,
-        redirectUrl: existingOrder.redirectUrl,
-        orderId: existingOrder.internalOrderId,
-        sig: generateOrderSignature(existingOrder.internalOrderId)
-      });
-    }
-
-    // 4. Construction de la redirectURL vers /confirmation-achat avec orderId pour traçabilité infaillible
+    // 3. Clé d'idempotence et identifiant unique de commande
     const orderId = `ORD_${crypto.randomUUID()}`;
-    const sig = generateOrderSignature(orderId);
+    const downloadToken = generateDownloadToken(orderId);
     
-    // Détection automatique du nom de domaine actif (ex: https://importation-chine-afrique.aurakadre.com)
+    // Détection du domaine actif
     const hostHeader = req.headers['x-forwarded-host'] || req.headers.host || '';
     const protoHeader = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : 'http');
     const isHttps = protoHeader === 'https' && hostHeader && !hostHeader.includes('localhost');
     const baseUrl = isHttps ? `https://${hostHeader}` : `http://${hostHeader || 'localhost:3000'}`;
     
-    // Page intermédiaire /confirmation-achat avec orderId dans les query params
-    const redirectURL = `${baseUrl}/confirmation-achat?orderId=${orderId}`;
+    // Page de remerciement et téléchargement avec jeton sécurisé
+    const redirectURL = `${baseUrl}/confirmation-achat?orderId=${orderId}&token=${downloadToken}`;
 
-    // 5. Payload strict conforme (SANS customerPrice pour éviter l'erreur 422 !)
+    // 4. Payload conforme Maketou
     const maketouPayload = {
       productDocumentId,
       email: cleanEmail,
@@ -169,7 +153,7 @@ app.post('/api/checkout/create', async (req, res) => {
       return res.status(500).json({ success: false, error: "L'API Maketou n'a pas retourné d'URL de paiement" });
     }
 
-    // 6. Sauvegarde en base locale
+    // 5. Sauvegarde en base locale avec le jeton de téléchargement
     db.saveOrder({
       internalOrderId: orderId,
       cartId: cart.id,
@@ -178,7 +162,7 @@ app.post('/api/checkout/create', async (req, res) => {
       firstName,
       lastName,
       redirectUrl,
-      idempotencyKey,
+      downloadToken,
       fbp: maketouPayload.meta.fbp,
       fbc: maketouPayload.meta.fbc
     });
@@ -188,7 +172,7 @@ app.post('/api/checkout/create', async (req, res) => {
       cartId: cart.id,
       redirectUrl,
       orderId,
-      sig
+      token: downloadToken
     });
 
   } catch (error) {
@@ -284,125 +268,107 @@ app.get('/api/verify-order-status', async (req, res) => {
 });
 
 /**
- * ROUTE DÉDIÉE : GET /api/checkout/verify?cartId=...
- * Vérification pour la page intermédiaire /confirmation-achat
- * Compatible avec l'Outil de configuration d'événements Meta (?setup_pixel=1)
+ * ROUTE SÉCURISÉE DE TÉLÉCHARGEMENT DIRECT DU GUIDE : GET /api/download/guide
+ * Masque 100% le lien Google Drive et protège le fichier contre tout accès non autorisé
+ */
+app.get('/api/download/guide', async (req, res) => {
+  try {
+    const { orderId, token, action } = req.query;
+
+    if (!orderId || !token || !verifyDownloadToken(orderId, token)) {
+      return res.status(403).send('Accès refusé : jeton de téléchargement invalide ou manquant.');
+    }
+
+    const pdfBuffer = await getGuidePdfBuffer();
+
+    const isInline = action === 'open';
+    const disposition = isInline ? 'inline' : 'attachment';
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `${disposition}; filename="Guide-Complet-Importation-Chine-Afrique.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.setHeader('Cache-Control', 'private, no-transform, max-age=86400');
+
+    return res.end(pdfBuffer);
+  } catch (err) {
+    console.error('[Secure Download Error]', err);
+    return res.status(500).send('Erreur lors du téléchargement de votre guide.');
+  }
+});
+
+/**
+ * ROUTE DÉDIÉE : GET /api/checkout/verify
+ * Vérification pour la page de remerciement et téléchargement /confirmation-achat
  */
 app.get('/api/checkout/verify', async (req, res) => {
   try {
-    const { cartId, orderId, setup_pixel } = req.query;
+    const { cartId, orderId, token, setup_pixel } = req.query;
 
     // MODE A : Permet à l'Outil de configuration d'événements Meta d'afficher la page et le bouton
     if (setup_pixel === '1') {
-      return res.status(200).json({ verified: true, setupMode: true, alreadyTracked: false });
+      return res.status(200).json({
+        verified: true,
+        setupMode: true,
+        downloadUrl: '#',
+        openUrl: '#'
+      });
     }
 
-    let targetCartId = cartId;
+    let targetOrderId = orderId;
     let order = null;
 
     if (orderId) {
       order = db.getOrder(orderId);
-      if (order && order.cartId) {
-        targetCartId = order.cartId;
-      }
     }
-    if (!targetCartId && cartId) {
-      targetCartId = cartId;
+    if (!order && cartId) {
       order = db.getOrderByCartId(cartId);
+      if (order) targetOrderId = order.internalOrderId;
     }
 
-    // MODE SANDBOX SÉCURISÉ : Permet de tester le parcours client sans payer et sans polluer les stats CAPI
-    if (targetCartId && (targetCartId.startsWith('test_sandbox_') || targetCartId === 'test_demo')) {
-      return res.status(200).json({
-        verified: true,
-        alreadyTracked: false,
-        eventId: `pur_${targetCartId}`,
-        customerEmail: 'test@admin.com',
-        maketouDownloadUrl: process.env.MAKETOU_DOWNLOAD_URL || 'https://portal.maketou.com',
-        isSandbox: true
-      });
+    // Si le jeton est valide ou si la commande est enregistrée
+    const hasValidToken = targetOrderId && token && verifyDownloadToken(targetOrderId, token);
+
+    if (!order && !hasValidToken) {
+      return res.status(403).json({ verified: false, error: 'Accès non autorisé' });
     }
 
-    if (!targetCartId) {
-      return res.status(400).json({ verified: false, error: 'cartId ou orderId requis' });
-    }
+    const effectiveOrderId = targetOrderId || (order ? order.internalOrderId : 'ORD_CLIENT');
+    const validToken = token || generateDownloadToken(effectiveOrderId);
 
-    const apiKey = process.env.MAKETOU_API_KEY || 'msk_c650508aa6e29d8d7da5a9c2ea05cd20d081f29a89566fe1e3da0b79c080a4c8';
-    
-    // Appel sécurisé à l'API Maketou
-    let cart = null;
-    try {
-      const maketouRes = await fetch(`https://api.maketou.net/api/v1/stores/cart/${encodeURIComponent(targetCartId)}`, {
-        headers: { 'Authorization': `Bearer ${apiKey}` }
-      });
-      const cartData = await maketouRes.json();
-      cart = cartData?.cart || cartData;
-    } catch (apiErr) {
-      console.error('[Maketou Cart Verify Error]', apiErr.message);
-    }
-
-    const isCompleted = (cart && cart.status === 'completed') || (order && order.cached_status === 'completed');
-
-    if (!isCompleted) {
-      return res.status(200).json({ 
-        verified: false, 
-        status: cart?.status || order?.cached_status || 'waiting_payment' 
-      });
-    }
-
-    // Récupération ou création des métadonnées de commande
-    if (!order) {
-      order = db.getOrderByCartId(targetCartId) || {
-        cartId: targetCartId,
-        email: cart?.email || '',
-        phone: cart?.phone || '',
-        firstName: cart?.firstName || '',
-        lastName: cart?.lastName || '',
-        productDocumentId: cart?.productDocumentId || process.env.PRODUCT_DOCUMENT_ID,
-        purchase_tracked: 0
-      };
-    }
-
-    // Verrou atomique de déduplication Purchase CAPI
-    const lockResult = db.markCartPurchaseTrackedAtomically(targetCartId);
-    const alreadyTracked = !lockResult.success;
-
-    if (!alreadyTracked) {
+    // Déclenchement unique du Meta CAPI côté serveur
+    if (order && !order.purchase_tracked) {
+      db.markPurchaseTrackedAtomically(effectiveOrderId);
       const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
       const userAgent = req.headers['user-agent'];
       const host = req.headers['x-forwarded-host'] || req.headers.host || '';
-      const eventSourceUrl = `https://${host}/confirmation-achat`;
 
-      await sendMetaPurchaseEvent({
-        cartId: targetCartId,
-        email: cart?.email || order.email,
-        phone: cart?.phone || order.phone,
-        firstName: cart?.firstName || order.firstName,
-        lastName: cart?.lastName || order.lastName,
+      sendMetaPurchaseEvent({
+        cartId: order.cartId || effectiveOrderId,
+        email: order.email,
+        phone: order.phone,
+        firstName: order.firstName,
+        lastName: order.lastName,
         clientIp,
         userAgent,
         fbp: order.fbp,
         fbc: order.fbc,
         amount: process.env.PRODUCT_PRICE_XOF || 2500,
         currency: 'XOF',
-        eventSourceUrl
-      });
+        eventSourceUrl: `https://${host}/confirmation-achat`
+      }).catch(err => console.error('[Meta CAPI Async Error]', err));
     }
 
-    // Extraction de tout lien de téléchargement retourné par Maketou ou portail officiel
-    const maketouDownloadUrl = cart?.downloadUrl 
-      || cart?.fileUrl 
-      || cart?.receiptUrl 
-      || cart?.orderUrl 
-      || process.env.MAKETOU_DOWNLOAD_URL 
-      || 'https://portal.maketou.com';
+    const downloadUrl = `/api/download/guide?orderId=${encodeURIComponent(effectiveOrderId)}&token=${encodeURIComponent(validToken)}&action=download`;
+    const openUrl = `/api/download/guide?orderId=${encodeURIComponent(effectiveOrderId)}&token=${encodeURIComponent(validToken)}&action=open`;
 
     return res.status(200).json({
       verified: true,
-      alreadyTracked,
-      eventId: `pur_${targetCartId}`,
-      customerEmail: cart?.email || order.email,
-      maketouDownloadUrl
+      orderId: effectiveOrderId,
+      downloadToken: validToken,
+      downloadUrl,
+      openUrl,
+      customerEmail: order ? order.email : '',
+      eventId: `pur_${effectiveOrderId}`
     });
 
   } catch (e) {
@@ -411,27 +377,6 @@ app.get('/api/checkout/verify', async (req, res) => {
   }
 });
 
-/**
- * ROUTE 4 (Test Simulation) : POST /api/test/simulate-completed
- * Permet de tester le flux complet de validation, CAPI et redirection
- */
-app.post('/api/test/simulate-completed', (req, res) => {
-  const { orderId } = req.body;
-  if (!orderId) return res.status(400).json({ error: 'orderId requis' });
-
-  const order = db.getOrder(orderId);
-  if (!order) return res.status(404).json({ error: 'Commande non trouvée' });
-
-  db.updateOrderStatus(orderId, 'completed');
-  const lock = db.markPurchaseTrackedAtomically(orderId);
-
-  return res.json({
-    success: true,
-    message: 'Commande simulée comme complétée',
-    orderId,
-    purchase_tracked_now: lock.success
-  });
-});
 
 /**
  * ROUTE 3 : Webhook Maketou asynchrone
@@ -447,8 +392,12 @@ app.post('/api/webhooks/maketou', (req, res) => {
   return res.status(200).json({ received: true });
 });
 
-// Servir la page intermédiaire /confirmation-achat
+// Servir la page de remerciement et téléchargement (/confirmation-achat & /merci)
 app.get('/confirmation-achat', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'confirmation-achat.html'));
+});
+
+app.get('/merci', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'confirmation-achat.html'));
 });
 

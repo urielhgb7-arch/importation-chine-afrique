@@ -10,6 +10,10 @@
       "destination": "/confirmation-achat.html"
     },
     {
+      "source": "/merci",
+      "destination": "/confirmation-achat.html"
+    },
+    {
       "source": "/verify-purchase",
       "destination": "/confirmation-achat.html"
     }

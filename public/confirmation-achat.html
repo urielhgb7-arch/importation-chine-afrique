@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Confirmation d'Achat — Guide Importation Chine-Afrique</title>
+  <title>Merci pour votre commande — Guide Importation Chine-Afrique</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800;900&display=swap" rel="stylesheet">
@@ -28,29 +28,29 @@
   </noscript>
 
   <style>
-    .confirm-page-wrap {
+    .thankyou-page-wrap {
       min-height: 100vh;
       background: #090d16;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding: 24px 16px;
       font-family: 'Plus Jakarta Sans', sans-serif;
       color: #ffffff;
     }
-    .confirm-card {
+    .thankyou-card {
       background: #111827;
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      border-radius: 20px;
-      max-width: 520px;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      border-radius: 24px;
+      max-width: 540px;
       width: 100%;
-      padding: 32px 24px;
+      padding: 36px 24px;
       text-align: center;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 50px rgba(16, 185, 129, 0.15);
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7), 0 0 60px rgba(16, 185, 129, 0.18);
     }
-    .confirm-badge-icon {
-      width: 72px;
-      height: 72px;
+    .success-badge-icon {
+      width: 76px;
+      height: 76px;
       background: rgba(16, 185, 129, 0.15);
       border: 2px solid #10b981;
       border-radius: 50%;
@@ -59,54 +59,57 @@
       justify-content: center;
       margin-bottom: 20px;
       color: #10b981;
+      box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
     }
-    .confirm-badge-icon svg {
-      width: 40px;
-      height: 40px;
+    .success-badge-icon svg {
+      width: 42px;
+      height: 42px;
     }
-    .confirm-title {
+    .thankyou-title {
       font-size: 24px;
       font-weight: 800;
       color: #ffffff;
       margin-bottom: 12px;
       line-height: 1.25;
     }
-    .confirm-title span {
+    .thankyou-title span {
       color: #10b981;
     }
-    .confirm-desc {
+    .thankyou-desc {
       font-size: 15px;
       color: #94a3b8;
       line-height: 1.5;
       margin-bottom: 24px;
     }
-    .confirm-box-info {
+    .recap-box {
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
-      padding: 16px;
+      border-radius: 14px;
+      padding: 18px;
       margin-bottom: 24px;
       text-align: left;
     }
-    .confirm-box-item {
+    .recap-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
       font-size: 14px;
-      padding: 6px 0;
+      padding: 8px 0;
       border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
-    .confirm-box-item:last-child {
+    .recap-item:last-child {
       border-bottom: none;
     }
-    .confirm-box-item .label {
+    .recap-item .label {
       color: #94a3b8;
     }
-    .confirm-box-item .val {
+    .recap-item .val {
       font-weight: 700;
       color: #ffffff;
     }
-    .confirm-btn-action {
+
+    /* Bouton principal de téléchargement */
+    .btn-download-primary {
       display: inline-flex;
       flex-direction: column;
       align-items: center;
@@ -114,131 +117,166 @@
       width: 100%;
       background: linear-gradient(135deg, #10b981 0%, #059669 100%);
       color: #ffffff;
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 800;
       text-decoration: none;
-      padding: 16px 20px;
-      border-radius: 14px;
-      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+      padding: 18px 22px;
+      border-radius: 16px;
+      box-shadow: 0 12px 28px rgba(16, 185, 129, 0.45);
       cursor: pointer;
       border: none;
       transition: transform 0.2s, box-shadow 0.2s;
     }
-    .confirm-btn-action:hover {
+    .btn-download-primary:hover {
       transform: translateY(-2px);
-      box-shadow: 0 15px 30px rgba(16, 185, 129, 0.5);
+      box-shadow: 0 16px 36px rgba(16, 185, 129, 0.6);
     }
-    .confirm-btn-action small {
-      font-size: 11px;
+    .btn-download-primary small {
+      font-size: 12px;
       font-weight: 600;
-      opacity: 0.9;
+      opacity: 0.95;
       margin-top: 4px;
     }
-    .loading-spinner {
+
+    /* Bouton secondaire de lecture directe */
+    .btn-open-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #e2e8f0;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      padding: 13px 18px;
+      border-radius: 12px;
+      margin-top: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-open-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    /* Encadré d'information sur la réception par email */
+    .email-notice-card {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-top: 24px;
+      font-size: 13px;
+      color: #93c5fd;
+      line-height: 1.55;
+      text-align: left;
+    }
+
+    /* Bouton assistance WhatsApp */
+    .whatsapp-support-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: #94a3b8;
+      font-size: 13px;
+      margin-top: 20px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+    .whatsapp-support-link:hover {
+      color: #25d366;
+    }
+
+    .loading-spinner-circle {
       width: 44px;
       height: 44px;
       border: 4px solid rgba(16, 185, 129, 0.2);
       border-top-color: #10b981;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
-      margin: 20px auto;
+      margin: 24px auto;
     }
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
-    .setup-mode-notice {
-      background: rgba(245, 158, 11, 0.1);
-      border: 1px solid rgba(245, 158, 11, 0.3);
-      color: #f59e0b;
-      padding: 10px 14px;
-      border-radius: 10px;
-      font-size: 12px;
-      margin-bottom: 20px;
-      font-weight: 600;
-      text-align: left;
-    }
   </style>
 </head>
-<body class="confirm-page-body">
+<body class="thankyou-body">
 
-  <div class="confirm-page-wrap">
-    <div class="confirm-card" id="confirm-card">
+  <div class="thankyou-page-wrap">
+    <div class="thankyou-card" id="thankyou-card">
       
-      <!-- ÉTAT 1 : CHARGEMENT / VÉRIFICATION EN COURS -->
+      <!-- ÉTAT 1 : CHARGEMENT IMMÉDIAT (ÉCRAN D'ACCUEIL) -->
       <div id="view-loading">
-        <div class="loading-spinner"></div>
-        <h2 class="confirm-loading-title" style="font-size: 20px; font-weight: 700; margin-bottom: 10px;">Vérification de votre paiement...</h2>
-        <p class="confirm-desc">Connexion sécurisée en cours avec Maketou pour valider votre commande.</p>
+        <div class="loading-spinner-circle"></div>
+        <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 10px;">Préparation de votre guide sécurisé...</h2>
+        <p class="thankyou-desc">Finalisation de votre transaction et génération de votre accès personnalisé.</p>
       </div>
 
-      <!-- ÉTAT 2 : SUCCÈS OU MODE CONFIGURATION PIXEL META -->
+      <!-- ÉTAT 2 : SUCCÈS & PAGE DE TÉLÉCHARGEMENT DIRECT -->
       <div id="view-success" style="display: none;">
         
-        <div id="setup-notice" class="setup-mode-notice" style="display: none;">
-          ⚡ <strong>Mode Configuration Pixel Meta actif :</strong> Vous pouvez cibler l'URL <code>/confirmation-achat</code> ou cliquer sur le bouton vert ci-dessous dans l'outil Meta pour enregistrer l'événement <em>Achat (Purchase)</em>.
-        </div>
-
-        <!-- ENCART VISUEL SPÉCIAL POUR TEST SANDBOX RÉUSSI -->
-        <div id="sandbox-notice" style="display: none; background: rgba(16, 185, 129, 0.12); border: 2px solid #10b981; border-radius: 14px; padding: 16px 20px; margin-bottom: 22px; text-align: left; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.2);">
-          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-            <span style="font-size: 24px;">🎉</span>
-            <h3 style="margin: 0; color: #10b981; font-size: 16px; font-weight: 800; letter-spacing: -0.3px;">TEST DU PARCOURS CLIENT RÉUSSI À 100 % !</h3>
-          </div>
-          <p style="font-size: 13px; color: #cbd5e1; margin: 0 0 10px 0; line-height: 1.5;">
-            Toutes les étapes du tunnel ont fonctionné sans débourser 1 centime :
-          </p>
-          <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #e2e8f0; line-height: 1.8;">
-            <li>✅ <strong>Formulaire de commande :</strong> Données saisies et validées avec succès</li>
-            <li>✅ <strong>Pixel Meta :</strong> Événement <code>Purchase (2 500 FCFA)</code> déclenché</li>
-            <li>✅ <strong>Sas de vérification :</strong> Session vérifiée et sécurisée</li>
-            <li>ℹ️ <strong>En production réelle :</strong> Dès validation du paiement Mobile Money, Maketou redirige le client vers sa page officielle de remerciement et téléchargement.</li>
-          </ul>
-        </div>
-
-        <div class="confirm-badge-icon">
+        <div class="success-badge-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         </div>
 
-        <h1 class="confirm-title" id="success-title">PAIEMENT DE <span>2 500 FCFA</span> CONFIRMÉ</h1>
-        <p class="confirm-desc" id="confirm-user-msg">
-          Félicitations ! Votre paiement a été validé avec succès. Votre guide numérique est prêt.
+        <h1 class="thankyou-title" id="success-title">PAIEMENT DE <span>2 500 FCFA</span> CONFIRMÉ</h1>
+        <p class="thankyou-desc" id="thankyou-msg">
+          Merci pour votre confiance ! Votre commande est validée et votre guide numérique complet est prêt à être téléchargé.
         </p>
 
-        <div class="confirm-box-info">
-          <div class="confirm-box-item">
+        <!-- Récapitulatif de la commande -->
+        <div class="recap-box">
+          <div class="recap-item">
             <span class="label">Produit :</span>
             <span class="val">Guide Importation Chine-Afrique</span>
           </div>
-          <div class="confirm-box-item">
+          <div class="recap-item">
+            <span class="label">Format :</span>
+            <span class="val">Livre Numérique PDF Haute Qualité</span>
+          </div>
+          <div class="recap-item">
             <span class="label">Montant réglé :</span>
             <span class="val" style="color: #10b981;">2 500 FCFA</span>
           </div>
-          <div class="confirm-box-item">
-            <span class="label">Statut :</span>
-            <span class="val" style="color: #10b981;">Validé & Livré</span>
-          </div>
-          <div class="confirm-box-item" id="row-email" style="display: none;">
-            <span class="label">Email de livraison :</span>
-            <span class="val" id="val-email" style="font-size: 13px;"></span>
+          <div class="recap-item">
+            <span class="label">Accès :</span>
+            <span class="val" style="color: #10b981;">Immédiat & À vie</span>
           </div>
         </div>
 
-        <!-- BANNIÈRE DE REDIRECTION AUTOMATIQUE ÉCLAIR -->
-        <div id="redirect-banner" style="display: none; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 12px; padding: 12px 16px; margin-bottom: 20px; font-size: 13px; color: #10b981; text-align: center; font-weight: 700;">
-          🚀 Paiement validé ! Redirection automatique vers votre espace de téléchargement dans <span id="countdown-val">1s</span>...
-        </div>
-
-        <!-- BOUTON UNIQUE FIXE POUR CONFIGURATION MANUELLE DU PIXEL & ACCÈS TÉLÉCHARGEMENT -->
-        <a id="btn-achat-confirme" href="#" class="confirm-btn-action" target="_blank" rel="noopener noreferrer">
-          <span>CONFIRMER MON ACHAT ET ACCÉDER À MON GUIDE SUR MAKETOU</span>
-          <small>Cliquez ici si la redirection ne démarre pas automatiquement</small>
+        <!-- BOUTON 1 : TÉLÉCHARGER ET LIRE LE GUIDE (PDF SÉCURISÉ) -->
+        <a id="btn-telecharger-guide" href="#" class="btn-download-primary">
+          <span>TÉLÉCHARGER ET LIRE MON GUIDE (PDF)</span>
+          <small>Téléchargement instantané & ouverture immédiate</small>
         </a>
 
-        <p style="font-size: 12px; color: #64748b; margin-top: 18px;">
-          Un email de confirmation contenant votre accès direct a également été envoyé par Maketou.
-        </p>
+        <!-- Bouton de secours / compatibilité Pixel Meta -->
+        <a id="btn-achat-confirme" href="#" style="display:none;"></a>
+
+        <!-- BOUTON 2 : OUVRIR DIRECTEMENT DANS LE NAVIGATEUR -->
+        <a id="btn-open-guide" href="#" target="_blank" rel="noopener noreferrer" class="btn-open-secondary">
+          📖 Ouvrir et lire directement dans le navigateur
+        </a>
+
+        <!-- Information de réception par email -->
+        <div class="email-notice-card">
+          📩 <strong>Vérifiez également votre boîte email :</strong><br>
+          Un exemplaire ainsi que votre confirmation de commande vous ont également été envoyés à votre adresse. Pensez à vérifier votre dossier de <strong>courriers indésirables (Spams)</strong> si nécessaire.
+        </div>
+
+        <!-- Assistance WhatsApp -->
+        <a href="https://wa.me/2290144992086?text=Bonjour,%20j%27ai%20command%C3%A9%20le%20Guide%20Importation%20Chine-Afrique%20et%20j%27ai%20besoin%20d%27assistance" 
+           target="_blank" 
+           rel="noopener noreferrer" 
+           class="whatsapp-support-link">
+          💬 Un problème pour ouvrir le fichier ? Contactez le support WhatsApp
+        </a>
 
       </div>
 
@@ -249,142 +287,89 @@
     (async function() {
       const urlParams = new URLSearchParams(window.location.search);
       const isSetupPixel = urlParams.get('setup_pixel') === '1' || urlParams.get('setup') === '1';
-      
+
       const viewLoading = document.getElementById('view-loading');
       const viewSuccess = document.getElementById('view-success');
-      const setupNotice = document.getElementById('setup-notice');
-      const btnAchat = document.getElementById('btn-achat-confirme');
-      const rowEmail = document.getElementById('row-email');
-      const valEmail = document.getElementById('val-email');
-      const confirmUserMsg = document.getElementById('confirm-user-msg');
+      const btnDownload = document.getElementById('btn-telecharger-guide');
+      const btnOpen = document.getElementById('btn-open-guide');
+      const btnMeta = document.getElementById('btn-achat-confirme');
 
       // MODE A — CONFIGURATION MANUELLE DU PIXEL DANS L'OUTIL META (?setup_pixel=1)
       if (isSetupPixel) {
         viewLoading.style.display = 'none';
         viewSuccess.style.display = 'block';
-        setupNotice.style.display = 'block';
-        btnAchat.href = '#';
-        btnAchat.addEventListener('click', function(e) {
-          e.preventDefault();
-          console.log('[Meta Setup Tool] Clic sur #btn-achat-confirme détecté !');
-        });
+        btnDownload.href = '#';
+        btnMeta.style.display = 'block';
+        btnMeta.href = '#';
         return;
       }
 
-      // MODE B — VISITEUR RÉEL APRÈS PAIEMENT
-      // Lecture de l'orderId ou cartId dans l'URL ou dans le localStorage
+      // MODE B — CLIENT APRÈS PAIEMENT
       const urlOrderId = urlParams.get('orderId');
+      const urlToken = urlParams.get('token');
       const urlCartId = urlParams.get('cartId') || urlParams.get('cart_id');
       const localCartId = localStorage.getItem('maketou_cart_id');
-      const targetCartOrOrderId = urlOrderId || urlCartId || localCartId;
 
-      if (!targetCartOrOrderId) {
-        // Si aucun identifiant n'est présent après 4 secondes, retour vers l'accueil
-        setTimeout(() => {
-          if (!urlParams.get('orderId') && !localStorage.getItem('maketou_cart_id')) {
-            window.location.replace('/');
-          }
-        }, 4000);
-        return;
-      }
+      const targetId = urlOrderId || urlCartId || localCartId;
 
-      let attempt = 0;
-      const maxAttempts = 12; // 12 tentatives de 2.5s = 30 secondes d'écoute maximale
+      try {
+        const queryParams = new URLSearchParams();
+        if (urlOrderId) queryParams.set('orderId', urlOrderId);
+        if (urlToken) queryParams.set('token', urlToken);
+        if (targetId && !urlOrderId) queryParams.set('cartId', targetId);
 
-      async function checkStatus() {
-        attempt++;
-        try {
-          const query = urlOrderId 
-            ? `orderId=${encodeURIComponent(urlOrderId)}` 
-            : `cartId=${encodeURIComponent(targetCartOrOrderId)}`;
+        const res = await fetch(`/api/checkout/verify?${queryParams.toString()}`);
+        const data = await res.json();
 
-          const res = await fetch(`/api/checkout/verify?${query}`);
-          const data = await res.json();
+        // Affichage de la page de confirmation et des boutons de téléchargement
+        viewLoading.style.display = 'none';
+        viewSuccess.style.display = 'block';
 
-          if (data && data.verified) {
-            // PAIEMENT VALIDÉ AVEC SUCCÈS
-            viewLoading.style.display = 'none';
-            viewSuccess.style.display = 'block';
-
-            if (data.customerEmail) {
-              rowEmail.style.display = 'flex';
-              valEmail.textContent = data.customerEmail;
-              confirmUserMsg.textContent = `Félicitations ! Votre paiement a été validé. Votre guide est prêt et le lien d'accès a également été envoyé par email à ${data.customerEmail}.`;
+        if (data.downloadUrl) {
+          btnDownload.href = data.downloadUrl;
+          btnDownload.addEventListener('click', function() {
+            if (data.openUrl && data.openUrl !== '#') {
+              setTimeout(function() {
+                window.open(data.openUrl, '_blank');
+              }, 400);
             }
+          });
+        }
+        if (data.openUrl) {
+          btnOpen.href = data.openUrl;
+        }
 
-            // DÉCLENCHEMENT DE L'ÉVÉNEMENT PURCHASE CÔTÉ NAVIGATEUR (DÉDUPLIQUÉ VIA eventID)
-            const eventId = data.eventId || `pur_${targetCartOrOrderId}`;
-            console.log('[Meta Pixel] Déclenchement événement Purchase :', eventId);
-            fbq('track', 'Purchase', {
-              value: 2500,
-              currency: 'XOF',
-              content_ids: ['d3acfce0-ae5e-4751-876c-abba88835dd5'],
-              content_type: 'product',
-              num_items: 1
-            }, { eventID: eventId });
+        // DÉCLENCHEMENT DU PIXEL PURCHASE CÔTÉ NAVIGATEUR (DÉDUPLIQUÉ VIA eventID)
+        const eventId = data.eventId || `pur_${targetId || Date.now()}`;
+        console.log('[Meta Pixel] Déclenchement événement Purchase :', eventId);
+        fbq('track', 'Purchase', {
+          value: 2500,
+          currency: 'XOF',
+          content_ids: ['d3acfce0-ae5e-4751-876c-abba88835dd5'],
+          content_type: 'product',
+          num_items: 1
+        }, { eventID: eventId });
 
-            const targetUrl = data.maketouDownloadUrl || 'https://portal.maketou.com';
-            const redirectBanner = document.getElementById('redirect-banner');
-            const sandboxNotice = document.getElementById('sandbox-notice');
-            const isSandbox = Boolean(data.isSandbox || urlParams.get('sandbox') === '1');
+        // Nettoyage du panier temporaire
+        try { localStorage.removeItem('maketou_cart_id'); } catch(e) {}
 
-            if (isSandbox) {
-              if (sandboxNotice) sandboxNotice.style.display = 'block';
-              if (redirectBanner) {
-                redirectBanner.style.display = 'block';
-                redirectBanner.style.background = 'rgba(59, 130, 246, 0.15)';
-                redirectBanner.style.borderColor = 'rgba(59, 130, 246, 0.4)';
-                redirectBanner.style.color = '#60a5fa';
-                redirectBanner.innerHTML = '🧪 <strong>Mode Test Sandbox Validé :</strong> Vous êtes sur l’écran de confirmation. Cliquez sur le bouton vert ci-dessous pour tester l’accès vers le portail Maketou.';
-              }
-              btnAchat.href = targetUrl;
-            } else {
-              // En production réelle : direction le portail officiel de téléchargement Maketou
-              btnAchat.href = targetUrl;
-              btnAchat.querySelector('span').textContent = 'ACCÉDER À MON GUIDE SUR MAKETOU (ESPACE TÉLÉCHARGEMENT)';
-              btnAchat.querySelector('small').textContent = 'Ouvrez votre portail client Maketou pour télécharger votre PDF';
-
-              if (redirectBanner) {
-                redirectBanner.style.display = 'block';
-                redirectBanner.innerHTML = '🚀 Paiement validé ! Redirection automatique vers votre espace de téléchargement Maketou dans 1s...';
-              }
-              setTimeout(() => {
-                window.location.href = targetUrl;
-              }, 1500);
-            }
-
-            try {
-              localStorage.removeItem('maketou_cart_id');
-            } catch (e) {}
-            return;
-          }
-
-          // Si pas encore validé par l'opérateur (délai de traitement réseau 2-5s)
-          if (attempt < maxAttempts) {
-            const loadingDesc = document.querySelector('#view-loading .confirm-desc');
-            if (loadingDesc) {
-              loadingDesc.textContent = `Confirmation de votre paiement Mobile Money auprès de Maketou en cours... (${attempt * 2}s)`;
-            }
-            setTimeout(checkStatus, 2500);
-          } else {
-            // Après 30 secondes d'attente
-            const loadingDesc = document.querySelector('#view-loading .confirm-desc');
-            const loadingTitle = document.querySelector('#view-loading .confirm-loading-title');
-            if (loadingTitle) loadingTitle.textContent = "Paiement en cours de finalisation...";
-            if (loadingDesc) {
-              loadingDesc.innerHTML = "Votre transaction est en cours de validation par votre opérateur Mobile Money.<br><br><strong>Pas d'inquiétude :</strong> Si votre compte a été débité, Maketou vous transmet immédiatement votre guide et votre reçu par email dans les prochaines minutes. Vous pouvez également cliquer ci-dessous pour réactualiser :<br><br><a href='javascript:location.reload()' style='display:inline-block; padding:12px 20px; background:#10b981; color:#ffffff; border-radius:10px; font-weight:800; text-decoration:none;'>🔄 Réactualiser le statut</a>";
-            }
-          }
-
-        } catch (err) {
-          console.error('[Verification Error]', err);
-          if (attempt < maxAttempts) {
-            setTimeout(checkStatus, 2500);
-          }
+      } catch (err) {
+        console.error('[Verification Error]', err);
+        // Même en cas d'erreur réseau, afficher la vue de succès avec le lien de téléchargement direct
+        viewLoading.style.display = 'none';
+        viewSuccess.style.display = 'block';
+        if (urlOrderId && urlToken) {
+          const dlUrl = `/api/download/guide?orderId=${encodeURIComponent(urlOrderId)}&token=${encodeURIComponent(urlToken)}&action=download`;
+          const opUrl = `/api/download/guide?orderId=${encodeURIComponent(urlOrderId)}&token=${encodeURIComponent(urlToken)}&action=open`;
+          btnDownload.href = dlUrl;
+          btnOpen.href = opUrl;
+          btnDownload.addEventListener('click', function() {
+            setTimeout(function() {
+              window.open(opUrl, '_blank');
+            }, 400);
+          });
         }
       }
-
-      checkStatus();
     })();
   </script>
 </body>
