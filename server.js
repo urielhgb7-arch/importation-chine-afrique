@@ -93,7 +93,15 @@ app.post('/api/checkout/create', async (req, res) => {
     // 4. Construction d'une redirectURL HTTPS 100 % valide (Maketou exige https://)
     const orderId = `ORD_${crypto.randomUUID()}`;
     const sig = generateOrderSignature(orderId);
-    const baseUrl = process.env.APP_BASE_URL || '';
+    
+    // Détection automatique du nom de domaine actif (ex: https://importation-chine-afrique.aurakadre.com)
+    const hostHeader = req.headers['x-forwarded-host'] || req.headers.host || '';
+    const protoHeader = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : 'http');
+    const autoDetectedUrl = (protoHeader === 'https' && hostHeader && !hostHeader.includes('localhost')) 
+      ? `https://${hostHeader}` 
+      : '';
+    
+    const baseUrl = process.env.APP_BASE_URL || autoDetectedUrl;
     const isPublicHttps = baseUrl.startsWith('https://') && !baseUrl.includes('votre-domaine') && !baseUrl.includes('localhost');
     const redirectURL = isPublicHttps
       ? `${baseUrl.replace(/\/$/, '')}/verify-purchase?orderId=${orderId}&sig=${sig}`
