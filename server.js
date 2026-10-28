@@ -71,6 +71,40 @@ app.post('/api/checkout/create', async (req, res) => {
     const cleanPhone = '+' + String(phone || '').replace(/[^0-9]/g, '');
     const cleanEmail = String(email || '').trim().toLowerCase();
 
+    // 2.1 MODE SANDBOX SÉCURISÉ : Permet à l'administrateur de tester le parcours complet sans payer
+    // S'active UNIQUEMENT si l'email se termine par @test.com ou est test@admin.com
+    const isSandboxTest = cleanEmail === 'test@admin.com' || cleanEmail.endsWith('@test.com');
+    if (isSandboxTest) {
+      const testCartId = `test_sandbox_${Date.now()}`;
+      const hostHeader = req.headers['x-forwarded-host'] || req.headers.host || '';
+      const protoHeader = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : 'http');
+      const isHttps = protoHeader === 'https' && hostHeader && !hostHeader.includes('localhost');
+      const baseUrl = isHttps ? `https://${hostHeader}` : `http://${hostHeader || 'localhost:3000'}`;
+
+      db.saveOrder({
+        internalOrderId: testCartId,
+        cartId: testCartId,
+        email: cleanEmail,
+        phone: cleanPhone,
+        firstName,
+        lastName,
+        redirectUrl: `${baseUrl}/confirmation-achat?cartId=${testCartId}&sandbox=1`,
+        idempotencyKey: `test_${testCartId}`,
+        fbp: req.cookies?.['_fbp'] || '',
+        fbc: req.cookies?.['_fbc'] || '',
+        cached_status: 'completed'
+      });
+
+      console.log(`[Sandbox Test] Parcours test déclenché pour ${cleanEmail} (${testCartId})`);
+      return res.status(200).json({
+        success: true,
+        cartId: testCartId,
+        redirectUrl: `${baseUrl}/confirmation-achat?cartId=${testCartId}&sandbox=1`,
+        orderId: testCartId,
+        isSandbox: true
+      });
+    }
+
     // 3. Calcul de la clé d'idempotence
     const timeSlice = Math.floor(Date.now() / (10 * 60 * 1000));
     const idempotencyKey = clientKey || crypto.createHash('sha256')
@@ -265,6 +299,18 @@ app.get('/api/checkout/verify', async (req, res) => {
 
     if (!cartId) {
       return res.status(400).json({ verified: false, error: 'cartId requis' });
+    }
+
+    // MODE SANDBOX SÉCURISÉ : Permet de tester le parcours client sans payer et sans polluer les stats CAPI
+    if (cartId.startsWith('test_sandbox_') || cartId === 'test_demo') {
+      return res.status(200).json({
+        verified: true,
+        alreadyTracked: false,
+        eventId: `pur_${cartId}`,
+        customerEmail: 'test@admin.com',
+        maketouDownloadUrl: process.env.MAKETOU_DOWNLOAD_URL || 'https://api.maketou.net',
+        isSandbox: true
+      });
     }
 
     const apiKey = process.env.MAKETOU_API_KEY || 'msk_c650508aa6e29d8d7da5a9c2ea05cd20d081f29a89566fe1e3da0b79c080a4c8';
