@@ -124,7 +124,7 @@ app.post('/api/checkout/create', async (req, res) => {
       });
     }
 
-    // 4. Construction de la redirectURL vers /confirmation-achat
+    // 4. Construction de la redirectURL vers /confirmation-achat avec orderId pour traçabilité infaillible
     const orderId = `ORD_${crypto.randomUUID()}`;
     const sig = generateOrderSignature(orderId);
     
@@ -134,8 +134,8 @@ app.post('/api/checkout/create', async (req, res) => {
     const isHttps = protoHeader === 'https' && hostHeader && !hostHeader.includes('localhost');
     const baseUrl = isHttps ? `https://${hostHeader}` : `http://${hostHeader || 'localhost:3000'}`;
     
-    // Page intermédiaire /confirmation-achat pour la validation et le pixel
-    const redirectURL = `${baseUrl}/confirmation-achat`;
+    // Page intermédiaire /confirmation-achat avec orderId dans les query params
+    const redirectURL = `${baseUrl}/confirmation-achat?orderId=${orderId}`;
 
     // 5. Payload strict conforme (SANS customerPrice pour éviter l'erreur 422 !)
     const maketouPayload = {
@@ -290,27 +290,41 @@ app.get('/api/verify-order-status', async (req, res) => {
  */
 app.get('/api/checkout/verify', async (req, res) => {
   try {
-    const { cartId, setup_pixel } = req.query;
+    const { cartId, orderId, setup_pixel } = req.query;
 
     // MODE A : Permet à l'Outil de configuration d'événements Meta d'afficher la page et le bouton
     if (setup_pixel === '1') {
       return res.status(200).json({ verified: true, setupMode: true, alreadyTracked: false });
     }
 
-    if (!cartId) {
-      return res.status(400).json({ verified: false, error: 'cartId requis' });
+    let targetCartId = cartId;
+    let order = null;
+
+    if (orderId) {
+      order = db.getOrder(orderId);
+      if (order && order.cartId) {
+        targetCartId = order.cartId;
+      }
+    }
+    if (!targetCartId && cartId) {
+      targetCartId = cartId;
+      order = db.getOrderByCartId(cartId);
     }
 
     // MODE SANDBOX SÉCURISÉ : Permet de tester le parcours client sans payer et sans polluer les stats CAPI
-    if (cartId.startsWith('test_sandbox_') || cartId === 'test_demo') {
+    if (targetCartId && (targetCartId.startsWith('test_sandbox_') || targetCartId === 'test_demo')) {
       return res.status(200).json({
         verified: true,
         alreadyTracked: false,
-        eventId: `pur_${cartId}`,
+        eventId: `pur_${targetCartId}`,
         customerEmail: 'test@admin.com',
-        maketouDownloadUrl: process.env.MAKETOU_DOWNLOAD_URL || 'https://vouh-digital-shop-0.mymaketou.shop',
+        maketouDownloadUrl: process.env.MAKETOU_DOWNLOAD_URL || 'https://portal.maketou.com',
         isSandbox: true
       });
+    }
+
+    if (!targetCartId) {
+      return res.status(400).json({ verified: false, error: 'cartId ou orderId requis' });
     }
 
     const apiKey = process.env.MAKETOU_API_KEY || 'msk_c650508aa6e29d8d7da5a9c2ea05cd20d081f29a89566fe1e3da0b79c080a4c8';
@@ -318,7 +332,7 @@ app.get('/api/checkout/verify', async (req, res) => {
     // Appel sécurisé à l'API Maketou
     let cart = null;
     try {
-      const maketouRes = await fetch(`https://api.maketou.net/api/v1/stores/cart/${encodeURIComponent(cartId)}`, {
+      const maketouRes = await fetch(`https://api.maketou.net/api/v1/stores/cart/${encodeURIComponent(targetCartId)}`, {
         headers: { 'Authorization': `Bearer ${apiKey}` }
       });
       const cartData = await maketouRes.json();
@@ -327,26 +341,30 @@ app.get('/api/checkout/verify', async (req, res) => {
       console.error('[Maketou Cart Verify Error]', apiErr.message);
     }
 
-    if (!cart || cart.status !== 'completed') {
+    const isCompleted = (cart && cart.status === 'completed') || (order && order.cached_status === 'completed');
+
+    if (!isCompleted) {
       return res.status(200).json({ 
         verified: false, 
-        status: cart?.status || 'waiting_payment' 
+        status: cart?.status || order?.cached_status || 'waiting_payment' 
       });
     }
 
     // Récupération ou création des métadonnées de commande
-    const order = db.getOrderByCartId(cartId) || db.getOrder(cartId) || {
-      cartId,
-      email: cart.email || '',
-      phone: cart.phone || '',
-      firstName: cart.firstName || '',
-      lastName: cart.lastName || '',
-      productDocumentId: cart.productDocumentId || process.env.PRODUCT_DOCUMENT_ID,
-      purchase_tracked: 0
-    };
+    if (!order) {
+      order = db.getOrderByCartId(targetCartId) || {
+        cartId: targetCartId,
+        email: cart?.email || '',
+        phone: cart?.phone || '',
+        firstName: cart?.firstName || '',
+        lastName: cart?.lastName || '',
+        productDocumentId: cart?.productDocumentId || process.env.PRODUCT_DOCUMENT_ID,
+        purchase_tracked: 0
+      };
+    }
 
     // Verrou atomique de déduplication Purchase CAPI
-    const lockResult = db.markCartPurchaseTrackedAtomically(cartId);
+    const lockResult = db.markCartPurchaseTrackedAtomically(targetCartId);
     const alreadyTracked = !lockResult.success;
 
     if (!alreadyTracked) {
@@ -356,11 +374,11 @@ app.get('/api/checkout/verify', async (req, res) => {
       const eventSourceUrl = `https://${host}/confirmation-achat`;
 
       await sendMetaPurchaseEvent({
-        cartId,
-        email: cart.email || order.email,
-        phone: cart.phone || order.phone,
-        firstName: cart.firstName || order.firstName,
-        lastName: cart.lastName || order.lastName,
+        cartId: targetCartId,
+        email: cart?.email || order.email,
+        phone: cart?.phone || order.phone,
+        firstName: cart?.firstName || order.firstName,
+        lastName: cart?.lastName || order.lastName,
         clientIp,
         userAgent,
         fbp: order.fbp,
@@ -371,19 +389,19 @@ app.get('/api/checkout/verify', async (req, res) => {
       });
     }
 
-    // Extraction de tout lien de téléchargement retourné par Maketou ou configuré
-    const maketouDownloadUrl = cart.downloadUrl 
-      || cart.fileUrl 
-      || cart.receiptUrl 
-      || cart.orderUrl 
+    // Extraction de tout lien de téléchargement retourné par Maketou ou portail officiel
+    const maketouDownloadUrl = cart?.downloadUrl 
+      || cart?.fileUrl 
+      || cart?.receiptUrl 
+      || cart?.orderUrl 
       || process.env.MAKETOU_DOWNLOAD_URL 
-      || 'https://vouh-digital-shop-0.mymaketou.shop';
+      || 'https://portal.maketou.com';
 
     return res.status(200).json({
       verified: true,
       alreadyTracked,
-      eventId: `pur_${cartId}`,
-      customerEmail: cart.email || order.email,
+      eventId: `pur_${targetCartId}`,
+      customerEmail: cart?.email || order.email,
       maketouDownloadUrl
     });
 

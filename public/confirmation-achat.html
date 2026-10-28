@@ -272,88 +272,119 @@
       }
 
       // MODE B — VISITEUR RÉEL APRÈS PAIEMENT
-      // Lecture du cartId dans l'URL ou dans le localStorage
-      const cartId = urlParams.get('cartId') || 
-                     urlParams.get('cart_id') || 
-                     urlParams.get('orderId') || 
-                     localStorage.getItem('maketou_cart_id');
+      // Lecture de l'orderId ou cartId dans l'URL ou dans le localStorage
+      const urlOrderId = urlParams.get('orderId');
+      const urlCartId = urlParams.get('cartId') || urlParams.get('cart_id');
+      const localCartId = localStorage.getItem('maketou_cart_id');
+      const targetCartOrOrderId = urlOrderId || urlCartId || localCartId;
 
-      // Si aucun cartId n'est présent, redirection immédiate vers l'accueil
-      if (!cartId) {
-        window.location.replace('/');
+      if (!targetCartOrOrderId) {
+        // Si aucun identifiant n'est présent après 4 secondes, retour vers l'accueil
+        setTimeout(() => {
+          if (!urlParams.get('orderId') && !localStorage.getItem('maketou_cart_id')) {
+            window.location.replace('/');
+          }
+        }, 4000);
         return;
       }
 
-      try {
-        const res = await fetch(`/api/checkout/verify?cartId=${encodeURIComponent(cartId)}`);
-        const data = await res.json();
+      let attempt = 0;
+      const maxAttempts = 12; // 12 tentatives de 2.5s = 30 secondes d'écoute maximale
 
-        // Si le paiement n'est pas validé : expulsion immédiate sans bouton
-        if (!data || !data.verified) {
-          window.location.replace('/');
-          return;
-        }
-
-        // Paiement validé avec succès
-        viewLoading.style.display = 'none';
-        viewSuccess.style.display = 'block';
-
-        if (data.customerEmail) {
-          rowEmail.style.display = 'flex';
-          valEmail.textContent = data.customerEmail;
-          confirmUserMsg.textContent = `Félicitations ! Votre paiement a été validé. Le lien d'accès a également été envoyé à ${data.customerEmail}.`;
-        }
-
-        // DÉCLENCHEMENT DE L'ÉVÉNEMENT PURCHASE CÔTÉ NAVIGATEUR (DÉDUPLIQUÉ VIA eventID)
-        const eventId = data.eventId || `pur_${cartId}`;
-        console.log('[Meta Pixel] Déclenchement événement Purchase :', eventId);
-        fbq('track', 'Purchase', {
-          value: 2500,
-          currency: 'XOF',
-          content_ids: ['d3acfce0-ae5e-4751-876c-abba88835dd5'],
-          content_type: 'product',
-          num_items: 1
-        }, { eventID: eventId });
-
-        // Configuration de la destination Maketou
-        const targetUrl = data.maketouDownloadUrl;
-        const redirectBanner = document.getElementById('redirect-banner');
-        const sandboxNotice = document.getElementById('sandbox-notice');
-        const isSandbox = Boolean(data.isSandbox || urlParams.get('sandbox') === '1');
-
-        if (isSandbox) {
-          if (sandboxNotice) sandboxNotice.style.display = 'block';
-          if (redirectBanner) {
-            redirectBanner.style.display = 'block';
-            redirectBanner.style.background = 'rgba(59, 130, 246, 0.15)';
-            redirectBanner.style.borderColor = 'rgba(59, 130, 246, 0.4)';
-            redirectBanner.style.color = '#60a5fa';
-            redirectBanner.innerHTML = '🧪 <strong>Mode Test Sandbox Validé :</strong> Vous êtes sur l’écran de confirmation. Cliquez sur le bouton vert ci-dessous pour tester l’accès vers votre boutique Maketou.';
-          }
-          if (targetUrl) btnAchat.href = targetUrl;
-        } else {
-          // En production réelle : redirection automatique vers la page de téléchargement Maketou
-          if (targetUrl) {
-            btnAchat.href = targetUrl;
-            if (redirectBanner) redirectBanner.style.display = 'block';
-            setTimeout(() => {
-              window.location.href = targetUrl;
-            }, 1200);
-          } else {
-            btnAchat.href = `mailto:${data.customerEmail || ''}`;
-            btnAchat.querySelector('small').textContent = 'Consultez votre boîte mail pour ouvrir votre guide PDF';
-          }
-        }
-
-        // Nettoyage du panier stocké
+      async function checkStatus() {
+        attempt++;
         try {
-          localStorage.removeItem('maketou_cart_id');
-        } catch (e) {}
+          const query = urlOrderId 
+            ? `orderId=${encodeURIComponent(urlOrderId)}` 
+            : `cartId=${encodeURIComponent(targetCartOrOrderId)}`;
 
-      } catch (err) {
-        console.error('[Verification Error]', err);
-        window.location.replace('/');
+          const res = await fetch(`/api/checkout/verify?${query}`);
+          const data = await res.json();
+
+          if (data && data.verified) {
+            // PAIEMENT VALIDÉ AVEC SUCCÈS
+            viewLoading.style.display = 'none';
+            viewSuccess.style.display = 'block';
+
+            if (data.customerEmail) {
+              rowEmail.style.display = 'flex';
+              valEmail.textContent = data.customerEmail;
+              confirmUserMsg.textContent = `Félicitations ! Votre paiement a été validé. Votre guide est prêt et le lien d'accès a également été envoyé par email à ${data.customerEmail}.`;
+            }
+
+            // DÉCLENCHEMENT DE L'ÉVÉNEMENT PURCHASE CÔTÉ NAVIGATEUR (DÉDUPLIQUÉ VIA eventID)
+            const eventId = data.eventId || `pur_${targetCartOrOrderId}`;
+            console.log('[Meta Pixel] Déclenchement événement Purchase :', eventId);
+            fbq('track', 'Purchase', {
+              value: 2500,
+              currency: 'XOF',
+              content_ids: ['d3acfce0-ae5e-4751-876c-abba88835dd5'],
+              content_type: 'product',
+              num_items: 1
+            }, { eventID: eventId });
+
+            const targetUrl = data.maketouDownloadUrl || 'https://portal.maketou.com';
+            const redirectBanner = document.getElementById('redirect-banner');
+            const sandboxNotice = document.getElementById('sandbox-notice');
+            const isSandbox = Boolean(data.isSandbox || urlParams.get('sandbox') === '1');
+
+            if (isSandbox) {
+              if (sandboxNotice) sandboxNotice.style.display = 'block';
+              if (redirectBanner) {
+                redirectBanner.style.display = 'block';
+                redirectBanner.style.background = 'rgba(59, 130, 246, 0.15)';
+                redirectBanner.style.borderColor = 'rgba(59, 130, 246, 0.4)';
+                redirectBanner.style.color = '#60a5fa';
+                redirectBanner.innerHTML = '🧪 <strong>Mode Test Sandbox Validé :</strong> Vous êtes sur l’écran de confirmation. Cliquez sur le bouton vert ci-dessous pour tester l’accès vers le portail Maketou.';
+              }
+              btnAchat.href = targetUrl;
+            } else {
+              // En production réelle : direction le portail officiel de téléchargement Maketou
+              btnAchat.href = targetUrl;
+              btnAchat.querySelector('span').textContent = 'ACCÉDER À MON GUIDE SUR MAKETOU (ESPACE TÉLÉCHARGEMENT)';
+              btnAchat.querySelector('small').textContent = 'Ouvrez votre portail client Maketou pour télécharger votre PDF';
+
+              if (redirectBanner) {
+                redirectBanner.style.display = 'block';
+                redirectBanner.innerHTML = '🚀 Paiement validé ! Redirection automatique vers votre espace de téléchargement Maketou dans 1s...';
+              }
+              setTimeout(() => {
+                window.location.href = targetUrl;
+              }, 1500);
+            }
+
+            try {
+              localStorage.removeItem('maketou_cart_id');
+            } catch (e) {}
+            return;
+          }
+
+          // Si pas encore validé par l'opérateur (délai de traitement réseau 2-5s)
+          if (attempt < maxAttempts) {
+            const loadingDesc = document.querySelector('#view-loading .confirm-desc');
+            if (loadingDesc) {
+              loadingDesc.textContent = `Confirmation de votre paiement Mobile Money auprès de Maketou en cours... (${attempt * 2}s)`;
+            }
+            setTimeout(checkStatus, 2500);
+          } else {
+            // Après 30 secondes d'attente
+            const loadingDesc = document.querySelector('#view-loading .confirm-desc');
+            const loadingTitle = document.querySelector('#view-loading .confirm-loading-title');
+            if (loadingTitle) loadingTitle.textContent = "Paiement en cours de finalisation...";
+            if (loadingDesc) {
+              loadingDesc.innerHTML = "Votre transaction est en cours de validation par votre opérateur Mobile Money.<br><br><strong>Pas d'inquiétude :</strong> Si votre compte a été débité, Maketou vous transmet immédiatement votre guide et votre reçu par email dans les prochaines minutes. Vous pouvez également cliquer ci-dessous pour réactualiser :<br><br><a href='javascript:location.reload()' style='display:inline-block; padding:12px 20px; background:#10b981; color:#ffffff; border-radius:10px; font-weight:800; text-decoration:none;'>🔄 Réactualiser le statut</a>";
+            }
+          }
+
+        } catch (err) {
+          console.error('[Verification Error]', err);
+          if (attempt < maxAttempts) {
+            setTimeout(checkStatus, 2500);
+          }
+        }
       }
+
+      checkStatus();
     })();
   </script>
 </body>
