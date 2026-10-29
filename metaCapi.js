@@ -28,7 +28,7 @@ async function sendMetaPurchaseEvent({
   userAgent,
   fbp,
   fbc,
-  amount = 2500,
+  amount = 1500,
   currency = 'XOF',
   eventSourceUrl
 }) {

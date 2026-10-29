@@ -228,7 +228,7 @@
           </svg>
         </div>
 
-        <h1 class="thankyou-title" id="success-title">PAIEMENT DE <span>2 500 FCFA</span> CONFIRMÉ</h1>
+        <h1 class="thankyou-title" id="success-title">PAIEMENT DE <span>1 500 FCFA</span> CONFIRMÉ</h1>
         <p class="thankyou-desc" id="thankyou-msg">
           Merci pour votre confiance ! Votre commande est validée et votre guide numérique complet est prêt à être téléchargé.
         </p>
@@ -245,7 +245,7 @@
           </div>
           <div class="recap-item">
             <span class="label">Montant réglé :</span>
-            <span class="val" style="color: #10b981;">2 500 FCFA</span>
+            <span class="val" style="color: #10b981;">1 500 FCFA</span>
           </div>
           <div class="recap-item">
             <span class="label">Accès :</span>
@@ -346,9 +346,9 @@
         const eventId = data.eventId || `pur_${targetId || Date.now()}`;
         console.log('[Meta Pixel] Déclenchement événement Purchase :', eventId);
         fbq('track', 'Purchase', {
-          value: 2500,
+          value: 1500,
           currency: 'XOF',
-          content_ids: ['d3acfce0-ae5e-4751-876c-abba88835dd5'],
+          content_ids: ['550dff27-bf7d-4d7b-b997-7cc86bcc6771'],
           content_type: 'product',
           num_items: 1
         }, { eventID: eventId });

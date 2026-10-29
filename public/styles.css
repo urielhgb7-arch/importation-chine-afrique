@@ -58,17 +58,67 @@ body.ultra-compact-body {
    BLOC 1 (ÉCRAN 1 : ~85vh) : BANDEAU + HERO CÔTE À CÔTE + CTA IMMÉDIAT
    ========================================================================== */
 .top-banner-mini {
-  background: linear-gradient(90deg, #7F1D1D, #991B1B, #7F1D1D);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: linear-gradient(90deg, #7F1D1D 0%, #991B1B 50%, #7F1D1D 100%);
   color: #FFFFFF;
-  padding: 6px 12px;
-  font-size: 0.78rem;
-  text-align: center;
+  padding: 6px 10px;
+  font-size: 0.76rem;
   font-weight: 600;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+
+.banner-content-wrap {
+  max-width: 680px;
+  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  text-align: center;
+}
+
+.banner-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.banner-countdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(252, 211, 77, 0.35);
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+.timer-label {
+  font-size: 0.72rem;
+  color: #FEE2E2;
+}
+
+.countdown-badge {
+  font-family: 'Plus Jakarta Sans', monospace, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #FEF08A;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 8px rgba(254, 240, 138, 0.5);
+}
+
+.flash-icon {
+  animation: pulse-flash 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-flash {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.8; }
 }
 
 .top-banner-mini .strikethrough {

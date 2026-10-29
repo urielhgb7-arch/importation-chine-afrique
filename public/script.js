@@ -9,6 +9,41 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
+  // 0. COMPTE À REBOURS OFFRE FLASH (15 MINUTES DÉGRESSIVES PERSISTANTES)
+  const countdownDisplay = document.getElementById('top-countdown-display');
+  if (countdownDisplay) {
+    const STORAGE_KEY = 'flash_offer_timer_end';
+    let endTime = parseInt(sessionStorage.getItem(STORAGE_KEY), 10);
+    const DURATION_SECONDS = 14 * 60 + 59; // 14 min 59 s
+
+    if (!endTime || isNaN(endTime) || endTime <= Date.now()) {
+      endTime = Date.now() + DURATION_SECONDS * 1000;
+      sessionStorage.setItem(STORAGE_KEY, endTime.toString());
+    }
+
+    function updateCountdown() {
+      const now = Date.now();
+      let diff = Math.max(0, Math.floor((endTime - now) / 1000));
+
+      if (diff <= 0) {
+        // Extension de secours de 4m59s pour maintenir la pression de conversion
+        endTime = Date.now() + (4 * 60 + 59) * 1000;
+        sessionStorage.setItem(STORAGE_KEY, endTime.toString());
+        diff = 4 * 60 + 59;
+      }
+
+      const minutes = Math.floor(diff / 60);
+      const seconds = diff % 60;
+      const minStr = minutes < 10 ? '0' + minutes : String(minutes);
+      const secStr = seconds < 10 ? '0' + seconds : String(seconds);
+
+      countdownDisplay.textContent = `${minStr}:${secStr}`;
+    }
+
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+  }
+
   // 1. DÉFILEMENT INSTANTANÉ VERS LE FORMULAIRE & FOCUS SUR NOM (0.3s)
   const scrollBtns = document.querySelectorAll('.js-scroll-to-checkout, a[href="#checkout-form"]');
   const checkoutSection = document.getElementById('checkout-form');

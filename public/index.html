@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Guide Importation Chine-Afrique — 2 500 FCFA au lieu de 12 000 FCFA</title>
+  <title>Guide Importation Chine-Afrique — 1 500 FCFA au lieu de 12 000 FCFA</title>
   <meta name="description" content="Commandez à l'usine en Chine depuis votre smartphone dès 25 000 FCFA et triplez vos marges en 14 jours.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -37,9 +37,18 @@
   <!-- =========================================================================
        BLOC 1 (ÉCRAN 1 : ~85vh) : BANDEAU + HERO CÔTE À CÔTE + CTA IMMÉDIAT
        ========================================================================= -->
-  <div class="top-banner-mini">
-    <svg class="svg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FCD34D" stroke-width="2.5"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3Z"/></svg>
-    <span>OFFRE FLASH : <strong>2 500 FCFA</strong> au lieu de <span class="strikethrough">12 000 FCFA</span> (-79 %) — Téléchargement immédiat</span>
+  <div class="top-banner-mini" id="top-urgency-banner">
+    <div class="banner-content-wrap">
+      <div class="banner-text">
+        <svg class="svg-icon flash-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FCD34D" stroke-width="2.5"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3Z"/></svg>
+        <span>OFFRE FLASH : <strong>1 500 FCFA</strong> au lieu de <span class="strikethrough">12 000 F</span> (-88%)</span>
+      </div>
+      <div class="banner-countdown">
+        <svg class="svg-icon timer-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#FCD34D" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span class="timer-label">Expire dans</span>
+        <span class="countdown-badge" id="top-countdown-display">14:59</span>
+      </div>
+    </div>
   </div>
 
   <header class="hero-compact">
@@ -83,7 +92,7 @@
 
       <!-- BOUTON CTA #1 (VISIBLE SANS SCROLLER SUR MOBILE) -->
       <a href="#checkout-form" class="cta-direct-btn js-scroll-to-checkout">
-        <span>TÉLÉCHARGER LE GUIDE MAINTENANT — 2500 FCFA</span>
+        <span>TÉLÉCHARGER LE GUIDE MAINTENANT — 1500 FCFA</span>
         <small>Paiement Mobile Money instantané • Accès PDF immédiat</small>
       </a>
 
@@ -149,7 +158,7 @@
         </div>
         <div class="review-mini-pill">
           <div class="review-stars-mini">⭐⭐⭐⭐⭐ ✅ Moov</div>
-          <p>« PDF reçu en 3 secondes sur mon téléphone après paiement de 2 500 FCFA. »</p>
+          <p>« PDF reçu en 3 secondes sur mon téléphone après paiement de 1 500 FCFA. »</p>
           <strong>Koffi M. (Lomé)</strong>
         </div>
         <div class="review-mini-pill">
@@ -191,7 +200,7 @@
         </div>
         <div class="value-highlight-line">
           <span>VOTRE PRIX AUJOURD'HUI (ACCÈS IMMÉDIAT EN 5 SECONDES) :</span>
-          <strong class="green-price">2 500 FCFA</strong>
+          <strong class="green-price">1 500 FCFA</strong>
         </div>
       </div>
 
@@ -228,7 +237,7 @@
         <button type="submit" id="submit-btn" class="submit-compact-btn">
           <span class="btn-text">
             <svg class="svg-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            PAYER 2500 FCFA PAR MOBILE MONEY ET TÉLÉCHARGER MAINTENANT
+            PAYER 1500 FCFA PAR MOBILE MONEY ET TÉLÉCHARGER MAINTENANT
           </span>
           <span class="btn-spinner" style="display:none;">Connexion à Maketou en cours...</span>
         </button>
@@ -249,7 +258,7 @@
   <div class="sticky-compact-bar" id="sticky-bar">
     <div class="sticky-compact-inner">
       <div class="sticky-left-price">
-        <span class="now-price">2 500 FCFA</span>
+        <span class="now-price">1 500 FCFA</span>
         <span class="was-price">12 000 F</span>
       </div>
       <a href="#checkout-form" class="sticky-act-btn js-scroll-to-checkout">
@@ -260,7 +269,7 @@
   </div>
 
   <!-- BOUTON WHATSAPP FLOTTANT (au-dessus de la barre collante) -->
-  <a href="https://wa.me/2290197000000?text=Bonjour,%20j'ai%20une%20question%20concernant%20le%20guide%20Importation%20Chine-Afrique%20à%202500%20FCFA" 
+  <a href="https://wa.me/2290197000000?text=Bonjour,%20j'ai%20une%20question%20concernant%20le%20guide%20Importation%20Chine-Afrique%20à%201500%20FCFA" 
      class="wa-float-compact" 
      target="_blank" 
      rel="noopener noreferrer" 

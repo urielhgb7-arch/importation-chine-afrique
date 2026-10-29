@@ -97,7 +97,7 @@ app.post('/api/checkout/create', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Champs obligatoires manquants' });
     }
 
-    const productDocumentId = process.env.PRODUCT_DOCUMENT_ID || 'd3acfce0-ae5e-4751-876c-abba88835dd5';
+    const productDocumentId = process.env.PRODUCT_DOCUMENT_ID || '550dff27-bf7d-4d7b-b997-7cc86bcc6771';
 
     // 1. Découpage du Nom Complet en firstName + lastName
     const parts = String(fullName || '').trim().split(/\s+/).filter(Boolean);
@@ -132,7 +132,7 @@ app.post('/api/checkout/create', async (req, res) => {
       meta: {
         internalOrderId: String(orderId),
         productSlug: 'importation-alibaba',
-        amountXOF: "2500",
+        amountXOF: "1500",
         fbp: fbp || req.cookies['_fbp'] || '',
         fbc: fbc || req.cookies['_fbc'] || ''
       }
@@ -240,7 +240,7 @@ app.get('/api/verify-order-status', async (req, res) => {
           userAgent,
           fbp: order.fbp,
           fbc: order.fbc,
-          amount: process.env.PRODUCT_PRICE_XOF || 2500,
+          amount: process.env.PRODUCT_PRICE_XOF || 1500,
           currency: 'XOF',
           eventSourceUrl: `${appBaseUrl}/verify-purchase?orderId=${orderId}&sig=${sig}`
         });
@@ -255,7 +255,7 @@ app.get('/api/verify-order-status', async (req, res) => {
       isCompleted: isCompleted,
       triggerPixel: triggerClientPixel,
       cartId: order.cartId,
-      amount: process.env.PRODUCT_PRICE_XOF || 2500,
+      amount: process.env.PRODUCT_PRICE_XOF || 1500,
       currency: 'XOF',
       downloadUrl: cartStatus === 'completed' ? (order.downloadUrl || null) : null,
       retryUrl: order.redirectUrl
@@ -352,7 +352,7 @@ app.get('/api/checkout/verify', async (req, res) => {
         userAgent,
         fbp: order.fbp,
         fbc: order.fbc,
-        amount: process.env.PRODUCT_PRICE_XOF || 2500,
+        amount: process.env.PRODUCT_PRICE_XOF || 1500,
         currency: 'XOF',
         eventSourceUrl: `https://${host}/confirmation-achat`
       }).catch(err => console.error('[Meta CAPI Async Error]', err));
@@ -413,7 +413,7 @@ if (require.main === module) {
     console.log(`=======================================================`);
     console.log(`🚀 Tunnel Maketou + Meta Andromeda actif sur le port ${PORT}`);
     console.log(`🔗 URL locale : http://localhost:${PORT}`);
-    console.log(`💰 Produit : ${process.env.PRODUCT_DOCUMENT_ID} (2500 FCFA)`);
+    console.log(`💰 Produit : ${process.env.PRODUCT_DOCUMENT_ID} (1500 FCFA)`);
     console.log(`=======================================================`);
   });
 }
