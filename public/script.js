@@ -198,10 +198,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const data = await res.json();
 
-        // Sauvegarde de l'ID panier dans localStorage pour la page /confirmation-achat
+        // Sauvegarde de l'ID panier et commande dans localStorage pour la page /confirmation-achat
         if (data.cartId) {
           try {
             localStorage.setItem('maketou_cart_id', data.cartId);
+            if (data.orderId) localStorage.setItem('maketou_order_id', data.orderId);
           } catch (e) {
             console.warn('LocalStorage error:', e);
           }

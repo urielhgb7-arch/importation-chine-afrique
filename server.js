@@ -50,14 +50,17 @@ function verifyOrderSignature(orderId, signature) {
 // Secret HMAC pour le téléchargement sécurisé du fichier
 const DOWNLOAD_TOKEN_SECRET = process.env.DOWNLOAD_TOKEN_SECRET || 'maketou_andromeda_hmac_secret_2026_x99';
 
-function generateDownloadToken(orderId) {
-  return crypto.createHmac('sha256', DOWNLOAD_TOKEN_SECRET).update(String(orderId)).digest('hex');
+// Signature d'un jeton de téléchargement PAYÉ (strictement lié à orderId et cartId validés)
+function generatePaidDownloadToken(orderId, cartId) {
+  return crypto.createHmac('sha256', DOWNLOAD_TOKEN_SECRET)
+    .update(`${orderId}:PAID:${cartId}`)
+    .digest('hex');
 }
 
-function verifyDownloadToken(orderId, token) {
-  if (!orderId || !token) return false;
+function verifyPaidDownloadToken(orderId, cartId, token) {
+  if (!orderId || !cartId || !token) return false;
   try {
-    const expected = generateDownloadToken(orderId);
+    const expected = generatePaidDownloadToken(orderId, cartId);
     return crypto.timingSafeEqual(Buffer.from(token, 'hex'), Buffer.from(expected, 'hex'));
   } catch (err) {
     return false;
@@ -110,7 +113,6 @@ app.post('/api/checkout/create', async (req, res) => {
 
     // 3. Clé d'idempotence et identifiant unique de commande
     const orderId = `ORD_${crypto.randomUUID()}`;
-    const downloadToken = generateDownloadToken(orderId);
     
     // Détection du domaine actif
     const hostHeader = req.headers['x-forwarded-host'] || req.headers.host || '';
@@ -118,8 +120,8 @@ app.post('/api/checkout/create', async (req, res) => {
     const isHttps = protoHeader === 'https' && hostHeader && !hostHeader.includes('localhost');
     const baseUrl = isHttps ? `https://${hostHeader}` : `http://${hostHeader || 'localhost:3000'}`;
     
-    // Page de remerciement et téléchargement avec jeton sécurisé
-    const redirectURL = `${baseUrl}/confirmation-achat?orderId=${orderId}&token=${downloadToken}`;
+    // Page de retour après paiement
+    const redirectURL = `${baseUrl}/confirmation-achat?orderId=${orderId}`;
 
     // 4. Payload conforme Maketou
     const maketouPayload = {
@@ -153,7 +155,7 @@ app.post('/api/checkout/create', async (req, res) => {
       return res.status(500).json({ success: false, error: "L'API Maketou n'a pas retourné d'URL de paiement" });
     }
 
-    // 5. Sauvegarde en base locale avec le jeton de téléchargement
+    // 5. Sauvegarde en base locale & Cookies sécurisés de session
     db.saveOrder({
       internalOrderId: orderId,
       cartId: cart.id,
@@ -162,17 +164,18 @@ app.post('/api/checkout/create', async (req, res) => {
       firstName,
       lastName,
       redirectUrl,
-      downloadToken,
       fbp: maketouPayload.meta.fbp,
       fbc: maketouPayload.meta.fbc
     });
+
+    res.cookie('maketou_cart_id', cart.id, { maxAge: 2 * 3600 * 1000, httpOnly: false, path: '/' });
+    res.cookie('maketou_order_id', orderId, { maxAge: 2 * 3600 * 1000, httpOnly: false, path: '/' });
 
     return res.status(200).json({
       success: true,
       cartId: cart.id,
       redirectUrl,
-      orderId,
-      token: downloadToken
+      orderId
     });
 
   } catch (error) {
@@ -269,14 +272,35 @@ app.get('/api/verify-order-status', async (req, res) => {
 
 /**
  * ROUTE SÉCURISÉE DE TÉLÉCHARGEMENT DIRECT DU GUIDE : GET /api/download/guide
- * Masque 100% le lien Google Drive et protège le fichier contre tout accès non autorisé
+ * Masque 100% le lien Google Drive et exige un paiement RÉELLEMENT confirmé auprès de Maketou
  */
 app.get('/api/download/guide', async (req, res) => {
   try {
-    const { orderId, token, action } = req.query;
+    const { orderId, cartId, token, action } = req.query;
 
-    if (!orderId || !token || !verifyDownloadToken(orderId, token)) {
+    // 1. Vérification cryptographique stricte du jeton payé
+    if (!orderId || !cartId || !token || !verifyPaidDownloadToken(orderId, cartId, token)) {
       return res.status(403).send('Accès refusé : jeton de téléchargement invalide ou manquant.');
+    }
+
+    // 2. Vérification que la commande / panier est réellement payé
+    let order = db.getOrder(orderId) || db.getOrderByCartId(cartId);
+    let isCompleted = order?.cached_status === 'completed';
+
+    if (!isCompleted && cartId) {
+      try {
+        const cartData = await maketou.getCartStatus(cartId);
+        if (cartData?.status === 'completed') {
+          isCompleted = true;
+          if (order) db.updateOrderStatus(order.internalOrderId, 'completed');
+        }
+      } catch (err) {
+        console.error('[Download Status Check Error]', err.message);
+      }
+    }
+
+    if (!isCompleted) {
+      return res.status(403).send('Accès refusé : le paiement de cette commande n\'a pas été validé.');
     }
 
     const pdfBuffer = await getGuidePdfBuffer();
@@ -298,11 +322,11 @@ app.get('/api/download/guide', async (req, res) => {
 
 /**
  * ROUTE DÉDIÉE : GET /api/checkout/verify
- * Vérification pour la page de remerciement et téléchargement /confirmation-achat
+ * Vérifie le statut réel du paiement auprès de Maketou et génère le jeton payé
  */
 app.get('/api/checkout/verify', async (req, res) => {
   try {
-    const { cartId, orderId, token, setup_pixel } = req.query;
+    const { cartId, orderId, setup_pixel } = req.query;
 
     // MODE A : Permet à l'Outil de configuration d'événements Meta d'afficher la page et le bouton
     if (setup_pixel === '1') {
@@ -314,36 +338,75 @@ app.get('/api/checkout/verify', async (req, res) => {
       });
     }
 
-    let targetOrderId = orderId;
-    let order = null;
+    // Récupération des identifiants (query > cookies)
+    const effectiveCartId = cartId || req.cookies?.['maketou_cart_id'];
+    const effectiveOrderId = orderId || req.cookies?.['maketou_order_id'];
 
-    if (orderId) {
-      order = db.getOrder(orderId);
-    }
-    if (!order && cartId) {
-      order = db.getOrderByCartId(cartId);
-      if (order) targetOrderId = order.internalOrderId;
-    }
-
-    // Si le jeton est valide ou si la commande est enregistrée
-    const hasValidToken = targetOrderId && token && verifyDownloadToken(targetOrderId, token);
-
-    if (!order && !hasValidToken) {
-      return res.status(403).json({ verified: false, error: 'Accès non autorisé' });
+    if (!effectiveCartId && !effectiveOrderId) {
+      return res.status(403).json({
+        verified: false,
+        error: 'Accès non autorisé : aucun identifiant de commande ou panier fourni.'
+      });
     }
 
-    const effectiveOrderId = targetOrderId || (order ? order.internalOrderId : 'ORD_CLIENT');
-    const validToken = token || generateDownloadToken(effectiveOrderId);
+    // Recherche de la commande locale
+    let order = effectiveOrderId ? db.getOrder(effectiveOrderId) : null;
+    if (!order && effectiveCartId) {
+      order = db.getOrderByCartId(effectiveCartId);
+    }
+
+    const finalOrderId = effectiveOrderId || order?.internalOrderId || 'ORD_CLIENT';
+    const finalCartId = effectiveCartId || order?.cartId;
+
+    if (!finalCartId) {
+      return res.status(403).json({
+        verified: false,
+        error: 'Identifiant de transaction manquant.'
+      });
+    }
+
+    // Vérification du statut réel auprès de Maketou
+    let isCompleted = order?.cached_status === 'completed';
+    let cartStatus = order?.cached_status || 'waiting_payment';
+
+    if (!isCompleted) {
+      try {
+        const cartData = await maketou.getCartStatus(finalCartId);
+        cartStatus = cartData?.status || cartStatus;
+        if (cartStatus === 'completed') {
+          isCompleted = true;
+          if (order) {
+            db.updateOrderStatus(order.internalOrderId, 'completed');
+          }
+        }
+      } catch (err) {
+        console.error('[Verify Cart Status Error]', err.message);
+      }
+    }
+
+    // Si le paiement n'est PAS complété : REFUS STRICT
+    if (!isCompleted) {
+      return res.status(403).json({
+        verified: false,
+        status: cartStatus,
+        error: 'Paiement non confirmé auprès de la passerelle Mobile Money.'
+      });
+    }
+
+    // Le paiement EST complété : Générer le jeton de téléchargement signé
+    const paidToken = generatePaidDownloadToken(finalOrderId, finalCartId);
+    const downloadUrl = `/api/download/guide?orderId=${encodeURIComponent(finalOrderId)}&cartId=${encodeURIComponent(finalCartId)}&token=${encodeURIComponent(paidToken)}&action=download`;
+    const openUrl = `/api/download/guide?orderId=${encodeURIComponent(finalOrderId)}&cartId=${encodeURIComponent(finalCartId)}&token=${encodeURIComponent(paidToken)}&action=open`;
 
     // Déclenchement unique du Meta CAPI côté serveur
     if (order && !order.purchase_tracked) {
-      db.markPurchaseTrackedAtomically(effectiveOrderId);
+      db.markPurchaseTrackedAtomically(finalOrderId);
       const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
       const userAgent = req.headers['user-agent'];
       const host = req.headers['x-forwarded-host'] || req.headers.host || '';
 
       sendMetaPurchaseEvent({
-        cartId: order.cartId || effectiveOrderId,
+        cartId: finalCartId,
         email: order.email,
         phone: order.phone,
         firstName: order.firstName,
@@ -358,17 +421,14 @@ app.get('/api/checkout/verify', async (req, res) => {
       }).catch(err => console.error('[Meta CAPI Async Error]', err));
     }
 
-    const downloadUrl = `/api/download/guide?orderId=${encodeURIComponent(effectiveOrderId)}&token=${encodeURIComponent(validToken)}&action=download`;
-    const openUrl = `/api/download/guide?orderId=${encodeURIComponent(effectiveOrderId)}&token=${encodeURIComponent(validToken)}&action=open`;
-
     return res.status(200).json({
       verified: true,
-      orderId: effectiveOrderId,
-      downloadToken: validToken,
+      orderId: finalOrderId,
+      cartId: finalCartId,
       downloadUrl,
       openUrl,
       customerEmail: order ? order.email : '',
-      eventId: `pur_${effectiveOrderId}`
+      eventId: `pur_${finalCartId}`
     });
 
   } catch (e) {

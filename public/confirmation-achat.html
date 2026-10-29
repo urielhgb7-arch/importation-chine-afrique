@@ -202,6 +202,23 @@
       animation: spin 0.8s linear infinite;
       margin: 24px auto;
     }
+    .denied-badge-icon {
+      width: 76px;
+      height: 76px;
+      background: rgba(239, 68, 68, 0.15);
+      border: 2px solid #ef4444;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      color: #ef4444;
+      box-shadow: 0 0 30px rgba(239, 68, 68, 0.3);
+    }
+    .denied-badge-icon svg {
+      width: 38px;
+      height: 38px;
+    }
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
@@ -215,11 +232,11 @@
       <!-- ÉTAT 1 : CHARGEMENT IMMÉDIAT (ÉCRAN D'ACCUEIL) -->
       <div id="view-loading">
         <div class="loading-spinner-circle"></div>
-        <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 10px;">Préparation de votre guide sécurisé...</h2>
-        <p class="thankyou-desc">Finalisation de votre transaction et génération de votre accès personnalisé.</p>
+        <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 10px;">Vérification de votre commande...</h2>
+        <p class="thankyou-desc">Confirmation de votre paiement et sécurisation de votre accès.</p>
       </div>
 
-      <!-- ÉTAT 2 : SUCCÈS & PAGE DE TÉLÉCHARGEMENT DIRECT -->
+      <!-- ÉTAT 2 : SUCCÈS & PAGE DE TÉLÉCHARGEMENT DIRECT (DÉVERROUILLÉ UNIQUEMENT SI PAYÉ) -->
       <div id="view-success" style="display: none;">
         
         <div class="success-badge-icon">
@@ -283,6 +300,34 @@
 
       </div>
 
+      <!-- ÉTAT 3 : ACCÈS STRICTEMENT REFUSÉ (AUCUN PAIEMENT DÉTECTÉ OU COMMANDE ANNULÉE) -->
+      <div id="view-denied" style="display: none;">
+        <div class="denied-badge-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </div>
+
+        <h1 class="thankyou-title" style="color: #F87171;">ACCÈS RÉSERVÉ AUX CLIENTS</h1>
+        <p class="thankyou-desc" id="denied-desc">
+          Cette page de téléchargement est strictement réservée aux commandes validées. Aucun paiement n'a été confirmé pour cette session.
+        </p>
+
+        <a href="/" class="btn-download-primary" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); text-decoration: none;">
+          <span>COMMANDER LE GUIDE (1 500 FCFA)</span>
+          <small>Paiement Mobile Money instantané • Accès immédiat</small>
+        </a>
+
+        <a href="https://wa.me/2290144992086?text=Bonjour,%20j%27ai%20pay%C3%A9%20mon%20guide%20mais%20la%20page%20affiche%20acc%C3%A8s%20r%C3%A9serv%C3%A9" 
+           target="_blank" 
+           rel="noopener noreferrer" 
+           class="whatsapp-support-link"
+           style="margin-top: 24px;">
+          💬 Vous avez déjà été débité ? Contactez le support WhatsApp
+        </a>
+      </div>
+
     </div>
   </div>
 
@@ -293,11 +338,13 @@
 
       const viewLoading = document.getElementById('view-loading');
       const viewSuccess = document.getElementById('view-success');
+      const viewDenied = document.getElementById('view-denied');
+      const deniedDesc = document.getElementById('denied-desc');
       const btnDownload = document.getElementById('btn-telecharger-guide');
       const btnOpen = document.getElementById('btn-open-guide');
       const btnMeta = document.getElementById('btn-achat-confirme');
 
-      // MODE A — CONFIGURATION MANUELLE DU PIXEL DANS L'OUTIL META (?setup_pixel=1)
+      // MODE A — CONFIGURATION DU PIXEL DANS L'OUTIL META (?setup_pixel=1)
       if (isSetupPixel) {
         viewLoading.style.display = 'none';
         viewSuccess.style.display = 'block';
@@ -307,72 +354,100 @@
         return;
       }
 
-      // MODE B — CLIENT APRÈS PAIEMENT
+      // MODE B — VÉRIFICATION RÉELLE DU CLIENT
       const urlOrderId = urlParams.get('orderId');
-      const urlToken = urlParams.get('token');
       const urlCartId = urlParams.get('cartId') || urlParams.get('cart_id');
       const localCartId = localStorage.getItem('maketou_cart_id');
+      const localOrderId = localStorage.getItem('maketou_order_id');
 
-      const targetId = urlOrderId || urlCartId || localCartId;
+      const targetCartId = urlCartId || localCartId;
+      const targetOrderId = urlOrderId || localOrderId;
 
-      try {
-        const queryParams = new URLSearchParams();
-        if (urlOrderId) queryParams.set('orderId', urlOrderId);
-        if (urlToken) queryParams.set('token', urlToken);
-        if (targetId && !urlOrderId) queryParams.set('cartId', targetId);
-
-        const res = await fetch(`/api/checkout/verify?${queryParams.toString()}`);
-        const data = await res.json();
-
-        // Affichage de la page de confirmation et des boutons de téléchargement
+      // VERROU 1 : Si la personne arrive sans AUCUN identifiant de panier ou commande -> BLOCAGE IMMÉDIAT
+      if (!targetCartId && !targetOrderId) {
         viewLoading.style.display = 'none';
-        viewSuccess.style.display = 'block';
+        viewDenied.style.display = 'block';
+        return;
+      }
 
-        if (data.downloadUrl) {
-          btnDownload.href = data.downloadUrl;
-          btnDownload.addEventListener('click', function() {
-            if (data.openUrl && data.openUrl !== '#') {
-              setTimeout(function() {
-                window.open(data.openUrl, '_blank');
-              }, 400);
+      let attempts = 0;
+      const maxAttempts = 6; // 6 tentatives x 2s = 12 secondes maximum
+
+      async function verifyOrder() {
+        attempts++;
+        try {
+          const queryParams = new URLSearchParams();
+          if (targetOrderId) queryParams.set('orderId', targetOrderId);
+          if (targetCartId) queryParams.set('cartId', targetCartId);
+
+          const res = await fetch(`/api/checkout/verify?${queryParams.toString()}`);
+          const data = await res.json();
+
+          if (data.verified && data.downloadUrl) {
+            // PAIEMENT RÉELLEMENT CONFIRMÉ PAR MAKETOU -> DÉVERROUILLAGE DU TÉLÉCHARGEMENT
+            viewLoading.style.display = 'none';
+            viewDenied.style.display = 'none';
+            viewSuccess.style.display = 'block';
+
+            btnDownload.href = data.downloadUrl;
+            btnDownload.addEventListener('click', function() {
+              if (data.openUrl && data.openUrl !== '#') {
+                setTimeout(function() {
+                  window.open(data.openUrl, '_blank');
+                }, 400);
+              }
+            });
+
+            if (data.openUrl) {
+              btnOpen.href = data.openUrl;
             }
-          });
-        }
-        if (data.openUrl) {
-          btnOpen.href = data.openUrl;
-        }
 
-        // DÉCLENCHEMENT DU PIXEL PURCHASE CÔTÉ NAVIGATEUR (DÉDUPLIQUÉ VIA eventID)
-        const eventId = data.eventId || `pur_${targetId || Date.now()}`;
-        console.log('[Meta Pixel] Déclenchement événement Purchase :', eventId);
-        fbq('track', 'Purchase', {
-          value: 1500,
-          currency: 'XOF',
-          content_ids: ['550dff27-bf7d-4d7b-b997-7cc86bcc6771'],
-          content_type: 'product',
-          num_items: 1
-        }, { eventID: eventId });
+            // DÉCLENCHEMENT DU PIXEL PURCHASE UNIQUEMENT POUR UN PAIEMENT VÉRIFIÉ
+            const eventId = data.eventId || `pur_${targetCartId || targetOrderId || Date.now()}`;
+            console.log('[Meta Pixel] Événement Purchase vérifié et déclenché :', eventId);
+            fbq('track', 'Purchase', {
+              value: 1500,
+              currency: 'XOF',
+              content_ids: ['550dff27-bf7d-4d7b-b997-7cc86bcc6771'],
+              content_type: 'product',
+              num_items: 1
+            }, { eventID: eventId });
 
-        // Nettoyage du panier temporaire
-        try { localStorage.removeItem('maketou_cart_id'); } catch(e) {}
+            // Nettoyage de sécurité
+            try {
+              localStorage.removeItem('maketou_cart_id');
+              localStorage.removeItem('maketou_order_id');
+            } catch(e) {}
+            return;
+          }
 
-      } catch (err) {
-        console.error('[Verification Error]', err);
-        // Même en cas d'erreur réseau, afficher la vue de succès avec le lien de téléchargement direct
-        viewLoading.style.display = 'none';
-        viewSuccess.style.display = 'block';
-        if (urlOrderId && urlToken) {
-          const dlUrl = `/api/download/guide?orderId=${encodeURIComponent(urlOrderId)}&token=${encodeURIComponent(urlToken)}&action=download`;
-          const opUrl = `/api/download/guide?orderId=${encodeURIComponent(urlOrderId)}&token=${encodeURIComponent(urlToken)}&action=open`;
-          btnDownload.href = dlUrl;
-          btnOpen.href = opUrl;
-          btnDownload.addEventListener('click', function() {
-            setTimeout(function() {
-              window.open(opUrl, '_blank');
-            }, 400);
-          });
+          // Si le paiement est en cours de confirmation Mobile Money (délai opérateur)
+          if (attempts < maxAttempts && (data.status === 'waiting_payment' || data.status === 'processing')) {
+            setTimeout(verifyOrder, 2000);
+            return;
+          }
+
+          // PAIEMENT NON VALIDÉ OU ANNULÉ -> ACCÈS STRICTEMENT REFUSÉ
+          viewLoading.style.display = 'none';
+          viewSuccess.style.display = 'none';
+          viewDenied.style.display = 'block';
+          if (data.status === 'abandoned' || data.status === 'failed') {
+            deniedDesc.textContent = "La transaction Mobile Money n'a pas été complétée ou a été annulée. Veuillez recommencer votre commande.";
+          }
+
+        } catch (err) {
+          console.error('[Verification Error]', err);
+          if (attempts < maxAttempts) {
+            setTimeout(verifyOrder, 2000);
+          } else {
+            viewLoading.style.display = 'none';
+            viewSuccess.style.display = 'none';
+            viewDenied.style.display = 'block';
+          }
         }
       }
+
+      verifyOrder();
     })();
   </script>
 </body>
