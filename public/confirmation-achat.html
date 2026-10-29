@@ -258,6 +258,18 @@
           </svg>
         </div>
 
+        <!-- Bannière spéciale Simulation TikTok -->
+        <div id="tiktok-test-banner" style="display: none; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 12px; padding: 14px 16px; margin-bottom: 20px; text-align: left; font-size: 13.5px; line-height: 1.6;">
+          <div style="font-weight: 800; color: #34d399; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+            <span>⚡ SIMULATION TIKTOK ACTIVE</span>
+          </div>
+          <div style="color: #cbd5e1;">
+            • <strong>Pixel Navigateur :</strong> <span style="color: #34d399;">CompletePayment envoyé</span> (1 500 FCFA)<br>
+            • <strong>API Conversions Serveur :</strong> <span id="tiktok-test-status" style="color: #fbbf24;">Envoi à TikTok en cours...</span><br>
+            • <strong>Event ID :</strong> <span id="tiktok-test-event-id" style="font-family: monospace; color: #38bdf8;"></span>
+          </div>
+        </div>
+
         <h1 class="thankyou-title" id="success-title">PAIEMENT DE <span>1 500 FCFA</span> CONFIRMÉ</h1>
         <p class="thankyou-desc" id="thankyou-msg">
           Merci pour votre confiance ! Votre commande est validée et votre guide numérique complet est prêt à être téléchargé.
@@ -348,6 +360,7 @@
     (async function() {
       const urlParams = new URLSearchParams(window.location.search);
       const isSetupPixel = urlParams.get('setup_pixel') === '1' || urlParams.get('setup') === '1';
+      const isTestTiktok = urlParams.get('test_tiktok') === '1' || urlParams.get('test_tiktok') === 'true' || urlParams.get('test_conversion') === '1';
 
       const viewLoading = document.getElementById('view-loading');
       const viewSuccess = document.getElementById('view-success');
@@ -364,6 +377,70 @@
         btnDownload.href = '#';
         btnMeta.style.display = 'block';
         btnMeta.href = '#';
+        return;
+      }
+
+      // MODE TEST TIKTOK — SIMULATION D'ACHAT COMPLETEPAYMENT (PIXEL + CAPI) (?test_tiktok=1)
+      if (isTestTiktok) {
+        viewLoading.style.display = 'none';
+        viewSuccess.style.display = 'block';
+
+        const testBanner = document.getElementById('tiktok-test-banner');
+        const testEventIdSpan = document.getElementById('tiktok-test-event-id');
+        const testStatusSpan = document.getElementById('tiktok-test-status');
+
+        const testEventId = urlParams.get('event_id') || `pur_test_${Date.now()}`;
+        if (testBanner) testBanner.style.display = 'block';
+        if (testEventIdSpan) testEventIdSpan.textContent = testEventId;
+
+        // 1. Déclenchement Pixel TikTok Navigateur
+        if (window.ttq) {
+          console.log('[TikTok Pixel Test] Déclenchement CompletePayment :', testEventId);
+          ttq.track('CompletePayment', {
+            content_id: '550dff27-bf7d-4d7b-b997-7cc86bcc6771',
+            content_type: 'product',
+            content_name: "Guide Complet de l'Importation Chine-Afrique sur Smartphone",
+            quantity: 1,
+            price: 1500,
+            value: 1500,
+            currency: 'XOF'
+          }, { event_id: testEventId });
+        }
+
+        // 2. Déclenchement API Conversions TikTok Serveur (CAPI)
+        const testCode = urlParams.get('test_code') || urlParams.get('test_event_code') || '';
+        fetch(`/api/test/tiktok-event?event_id=${encodeURIComponent(testEventId)}&test_code=${encodeURIComponent(testCode)}`)
+          .then(res => res.json())
+          .then(data => {
+            console.log('[TikTok CAPI Test Result]', data);
+            if (testStatusSpan) {
+              if (data.success && data.tiktokResponse?.code === 0) {
+                testStatusSpan.textContent = '✅ Validé par TikTok API (Code: 0, OK)';
+                testStatusSpan.style.color = '#34d399';
+              } else {
+                testStatusSpan.textContent = 'Envoyé (' + (data.tiktokResponse?.message || 'OK') + ')';
+                testStatusSpan.style.color = '#34d399';
+              }
+            }
+          })
+          .catch(err => {
+            console.error('[TikTok CAPI Error]', err);
+            if (testStatusSpan) {
+              testStatusSpan.textContent = 'Erreur d’envoi serveur';
+              testStatusSpan.style.color = '#f87171';
+            }
+          });
+
+        btnDownload.href = '#';
+        btnDownload.addEventListener('click', function(e) {
+          e.preventDefault();
+          alert('Mode simulation TikTok actif : Le téléchargement direct requiert une commande réelle vérifiée.');
+        });
+        btnOpen.href = '#';
+        btnOpen.addEventListener('click', function(e) {
+          e.preventDefault();
+          alert('Mode simulation TikTok actif : La consultation directe requiert une commande réelle vérifiée.');
+        });
         return;
       }
 

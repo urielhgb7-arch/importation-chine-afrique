@@ -470,6 +470,63 @@ app.post('/api/webhooks/maketou', (req, res) => {
   return res.status(200).json({ received: true });
 });
 
+/**
+ * ROUTE DE TEST / SIMULATION TIKTOK : GET & POST /api/test/tiktok-event
+ * Permet de déclencher un événement CompletePayment de test côté serveur
+ * pour valider le Pixel et l'API de conversions dans TikTok Ads Manager.
+ */
+app.all('/api/test/tiktok-event', async (req, res) => {
+  try {
+    const testCode = req.query.test_event_code || req.body?.test_event_code || req.query.test_code || req.body?.test_code;
+    const customEventId = req.query.event_id || req.body?.event_id || `pur_test_${Date.now()}`;
+    const email = req.query.email || req.body?.email || 'client.test@aurakadre.com';
+    const phone = req.query.phone || req.body?.phone || '+2250700000000';
+    const amount = Number(req.query.amount || req.body?.amount || process.env.PRODUCT_PRICE_XOF || 1500);
+
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    const host = req.headers['x-forwarded-host'] || req.headers.host || '';
+    const ttclid = req.query.ttclid || req.cookies?.['ttclid'] || '';
+    const ttp = req.query.ttp || req.cookies?.['_ttp'] || '';
+
+    const tiktokRes = await sendTikTokCompletePaymentEvent({
+      cartId: customEventId.replace(/^pur_/, ''),
+      eventId: customEventId,
+      email,
+      phone,
+      clientIp,
+      userAgent,
+      ttclid,
+      ttp,
+      amount,
+      currency: 'XOF',
+      eventSourceUrl: `https://${host}/confirmation-achat?test_tiktok=1`,
+      testEventCode: testCode || undefined
+    });
+
+    return res.status(200).json({
+      success: true,
+      simulated: true,
+      eventId: customEventId,
+      amount,
+      currency: 'XOF',
+      testEventCode: testCode || null,
+      tiktokResponse: tiktokRes
+    });
+  } catch (err) {
+    console.error('[TikTok Simulation Error]', err);
+    return res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
+// Interface de simulation TikTok
+app.get('/simuler-tiktok', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'test-tiktok.html'));
+});
+
 // Servir la page de remerciement et téléchargement (/confirmation-achat & /merci)
 app.get('/confirmation-achat', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'confirmation-achat.html'));

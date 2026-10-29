@@ -16,6 +16,10 @@
     {
       "source": "/verify-purchase",
       "destination": "/confirmation-achat.html"
+    },
+    {
+      "source": "/simuler-tiktok",
+      "destination": "/test-tiktok.html"
     }
   ]
 }

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulateur d'Achat TikTok Pixel & API Conversions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+  <!-- TikTok Pixel Code Start -->
+  <script>
+  !function (w, d, t) {
+    w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(
+  var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js",o=n&&n.partner;ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=r,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};n=document.createElement("script")
+  ;n.type="text/javascript",n.async=!0,n.src=r+"?sdkid="+e+"&lib="+t;e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};
+
+    ttq.load('DBHO283C77U8I4RJ1KK0');
+    ttq.page();
+  }(window, document, 'ttq');
+  </script>
+  <!-- TikTok Pixel Code End -->
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: #0b0f19;
+      color: #f1f5f9;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+    .container {
+      max-width: 680px;
+      width: 100%;
+      background: #111827;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 32px 28px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+    .badge-top {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+    p.subtitle {
+      color: #94a3b8;
+      font-size: 14.5px;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    .card-info {
+      background: #1f2937;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 22px;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 7px 0;
+      font-size: 13.5px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .info-row:last-child {
+      border-bottom: none;
+    }
+    .info-label {
+      color: #94a3b8;
+    }
+    .info-val {
+      font-weight: 700;
+      color: #ffffff;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .form-group {
+      margin-bottom: 18px;
+      text-align: left;
+    }
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+    }
+    .form-input {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 14px;
+      color: #ffffff;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus {
+      border-color: #10b981;
+    }
+    .form-hint {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 5px;
+      line-height: 1.4;
+    }
+    .btn-submit {
+      width: 100%;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      border: none;
+      padding: 16px 20px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.35);
+      transition: transform 0.2s, box-shadow 0.2s;
+      margin-top: 8px;
+    }
+    .btn-submit:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 30px rgba(16, 185, 129, 0.5);
+    }
+    .btn-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      display: block;
+      width: 100%;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.05);
+      color: #cbd5e1;
+      text-decoration: none;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 13px 18px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      margin-top: 12px;
+      transition: background 0.2s;
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.09);
+      color: #ffffff;
+    }
+    .console-box {
+      margin-top: 24px;
+      background: #030712;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      line-height: 1.6;
+      color: #94a3b8;
+      text-align: left;
+      display: none;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+    .console-success {
+      color: #34d399;
+      font-weight: 700;
+    }
+    .console-info {
+      color: #38bdf8;
+    }
+    .console-warn {
+      color: #f59e0b;
+    }
+    .guide-box {
+      margin-top: 24px;
+      background: rgba(56, 189, 248, 0.06);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #93c5fd;
+      text-align: left;
+    }
+    .guide-box strong {
+      color: #ffffff;
+    }
+    .guide-box ol {
+      margin-left: 20px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="badge-top">
+      <span>●</span> SIMULATEUR TIKTOK ADS MANAGER
+    </div>
+
+    <h1>Simuler un Achat TikTok (Pixel & CAPI)</h1>
+    <p class="subtitle">
+      Envoyez immédiatement l'événement <strong>CompletePayment</strong> à la fois via le Pixel TikTok (navigateur) et l'API de conversions (serveur) pour activer l'objectif d'achat dans TikTok Ads.
+    </p>
+
+    <!-- Détails de la configuration -->
+    <div class="card-info">
+      <div class="info-row">
+        <span class="info-label">TikTok Pixel ID</span>
+        <span class="info-val" style="color: #34d399;">DBHO283C77U8I4RJ1KK0</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Événement déclenché</span>
+        <span class="info-val">CompletePayment</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Valeur de l'achat</span>
+        <span class="info-val" style="color: #34d399;">1 500 FCFA (XOF)</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">ID Produit</span>
+        <span class="info-val">550dff27-bf7d-4d7b...</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Déduplication</span>
+        <span class="info-val" style="color: #38bdf8;">Automatique (event_id unique)</span>
+      </div>
+    </div>
+
+    <!-- Formulaire de simulation -->
+    <form id="simForm">
+      <div class="form-group">
+        <label class="form-label" for="testCode">Code d'événement de test TikTok (Optionnel)</label>
+        <input type="text" id="testCode" class="form-input" placeholder="ex: TEST12345 (facultatif)">
+        <div class="form-hint">
+          Si vous avez un code dans <em>TikTok Ads Manager > Gestionnaire d'événements > Tester les événements</em>, collez-le ici.<br>
+          <strong>Si vous laissez vide :</strong> l'événement est envoyé directement dans l'activité réelle de votre Pixel pour débloquer les publicités immédiatement.
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="testEmail">Email de simulation</label>
+        <input type="email" id="testEmail" class="form-input" value="client.test@aurakadre.com">
+      </div>
+
+      <button type="submit" id="btnSubmit" class="btn-submit">
+        ⚡ ENVOYER L'ÉVÉNEMENT COMPLETEPAYMENT À TIKTOK
+      </button>
+
+      <a href="/confirmation-achat?test_tiktok=1" target="_blank" class="btn-secondary">
+        🔗 Tester la page de remerciement (/confirmation-achat?test_tiktok=1)
+      </a>
+    </form>
+
+    <!-- Console de résultat en direct -->
+    <div id="consoleBox" class="console-box"></div>
+
+    <!-- Explication TikTok Ads -->
+    <div class="guide-box">
+      <strong>📌 Que faire après avoir cliqué sur le bouton ?</strong>
+      <ol>
+        <li>Rendez-vous sur votre <strong>TikTok Ads Manager</strong>.</li>
+        <li>Allez dans <strong>Outils > Gestionnaire d'événements</strong> et sélectionnez votre Pixel <code>DBHO283C77U8I4RJ1KK0</code>.</li>
+        <li>Vous verrez l'événement <strong>CompletePayment (Paiement terminé)</strong> apparaître en vert.</li>
+        <li>Vous pourrez ensuite créer votre campagne de conversion et sélectionner <strong>"Paiement terminé"</strong> comme objectif d'optimisation en toute sérénité.</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('simForm');
+    const btn = document.getElementById('btnSubmit');
+    const consoleBox = document.getElementById('consoleBox');
+
+    function log(msg, type = '') {
+      consoleBox.style.display = 'block';
+      const div = document.createElement('div');
+      if (type) div.className = `console-${type}`;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      consoleBox.appendChild(div);
+      consoleBox.scrollTop = consoleBox.scrollHeight;
+    }
+
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      btn.disabled = true;
+      btn.textContent = '⏳ Envoi des données à TikTok en cours...';
+      consoleBox.innerHTML = '';
+
+      const testCode = document.getElementById('testCode').value.trim();
+      const testEmail = document.getElementById('testEmail').value.trim() || 'client.test@aurakadre.com';
+      const eventId = 'pur_sim_' + Date.now();
+
+      log(`Démarrage de la simulation d'achat (ID: ${eventId})...`, 'info');
+
+      // 1. DÉCLENCHEMENT DU PIXEL TIKTOK CÔTÉ NAVIGATEUR
+      let pixelFired = false;
+      try {
+        if (window.ttq) {
+          ttq.track('CompletePayment', {
+            content_id: '550dff27-bf7d-4d7b-b997-7cc86bcc6771',
+            content_type: 'product',
+            content_name: "Guide Complet de l'Importation Chine-Afrique sur Smartphone",
+            quantity: 1,
+            price: 1500,
+            value: 1500,
+            currency: 'XOF'
+          }, { event_id: eventId });
+          pixelFired = true;
+          log('✅ [1/2] Pixel TikTok Navigateur : Événement CompletePayment (1500 XOF) déclenché !', 'success');
+        } else {
+          log('⚠️ [1/2] Pixel TikTok non chargé dans le navigateur (bloqueur de pub ou réseau lent).', 'warn');
+        }
+      } catch (err) {
+        log(`❌ Erreur Pixel Navigateur : ${err.message}`, 'warn');
+      }
+
+      // 2. DÉCLENCHEMENT DE L'API DE CONVERSIONS TIKTOK CÔTÉ SERVEUR (CAPI)
+      try {
+        log('⏳ [2/2] Envoi vers l\'API TikTok Business v1.3 (Server CAPI)...', 'info');
+        const res = await fetch('/api/test/tiktok-event', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            event_id: eventId,
+            test_event_code: testCode || undefined,
+            email: testEmail,
+            amount: 1500
+          })
+        });
+
+        const data = await res.json();
+        console.log('[TikTok Server Response]', data);
+
+        if (data.success && data.tiktokResponse?.code === 0) {
+          log('✅ [2/2] API de Conversions Serveur : Événement validé avec succès par TikTok !', 'success');
+          log(`• Message TikTok : "${data.tiktokResponse.message}" (Code: 0)`, 'success');
+          log(`• TikTok Request ID : ${data.tiktokResponse.request_id}`, 'info');
+          log(`• Déduplication synchronisée : event_id = ${eventId}`, 'info');
+          if (testCode) {
+            log(`• Code de test appliqué : ${testCode} (visible dans "Tester les événements")`, 'info');
+          } else {
+            log('• Mode production : Enregistré dans l\'historique d\'activité du Pixel.', 'success');
+          }
+          btn.style.background = '#059669';
+          btn.textContent = '🎉 ÉVÉNEMENT ENREGISTRÉ AVEC SUCCÈS ! (RECLIQUEZ POUR RÉESSAYER)';
+        } else {
+          log(`⚠️ Réponse serveur inattendue : ${JSON.stringify(data.tiktokResponse || data)}`, 'warn');
+          btn.textContent = '⚠️ Réessayez';
+        }
+      } catch (err) {
+        log(`❌ Erreur API Serveur : ${err.message}`, 'warn');
+        btn.textContent = '❌ Erreur de connexion';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

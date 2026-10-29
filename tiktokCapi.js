@@ -30,7 +30,9 @@ async function sendTikTokCompletePaymentEvent({
   ttp,
   amount = 1500,
   currency = 'XOF',
-  eventSourceUrl
+  eventSourceUrl,
+  testEventCode,
+  eventId: customEventId
 }) {
   const pixelId = process.env.TIKTOK_PIXEL_ID || 'DBHO283C77U8I4RJ1KK0';
   const accessToken = process.env.TIKTOK_ACCESS_TOKEN || '768bb41690ef8c180f32ffa08d411063236a87d2';
@@ -41,7 +43,7 @@ async function sendTikTokCompletePaymentEvent({
   }
 
   const eventTime = Math.floor(Date.now() / 1000);
-  const eventId = `pur_${cartId}`;
+  const eventId = customEventId || `pur_${cartId || Date.now()}`;
 
   const user = {};
   if (email) user.email = sha256(email);
@@ -79,6 +81,10 @@ async function sendTikTokCompletePaymentEvent({
       }
     ]
   };
+
+  if (testEventCode) {
+    payload.test_event_code = testEventCode;
+  }
 
   const url = 'https://business-api.tiktok.com/open_api/v1.3/event/track/';
 
