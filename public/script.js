@@ -208,8 +208,21 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
 
-        // REDIRECTION EXCLUSIVEMENT VERS LA VRAIE URL MONEROO RETOURNÉE PAR MAKETOU
+        // REDIRECTION VERS L'URL DE PAIEMENT RETOURNÉE PAR MAKETOU
         if ((data.success || data.cartId) && data.redirectUrl) {
+          if (window.ttq) {
+            try {
+              ttq.track('InitiateCheckout', {
+                content_id: '550dff27-bf7d-4d7b-b997-7cc86bcc6771',
+                content_type: 'product',
+                content_name: 'Guide Importation Chine-Afrique',
+                quantity: 1,
+                price: 1500,
+                value: 1500,
+                currency: 'XOF'
+              });
+            } catch(e) {}
+          }
           window.location.href = data.redirectUrl;
         } else {
           alert(data.error || "Une erreur est survenue lors de l'initialisation du paiement.");
