@@ -12,6 +12,7 @@ const path = require('path');
 const db = require('./database');
 const maketou = require('./maketou');
 const { sendMetaPurchaseEvent } = require('./metaCapi');
+const { sendTikTokCompletePaymentEvent } = require('./tiktokCapi');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -93,7 +94,7 @@ async function getGuidePdfBuffer() {
  */
 app.post('/api/checkout/create', async (req, res) => {
   try {
-    const { fullName, email, phone, fbp, fbc } = req.body;
+    const { fullName, email, phone, fbp, fbc, ttclid, ttp } = req.body;
     const clientKey = req.headers['x-idempotency-key'];
 
     if (!fullName || !email || !phone) {
@@ -165,7 +166,9 @@ app.post('/api/checkout/create', async (req, res) => {
       lastName,
       redirectUrl,
       fbp: maketouPayload.meta.fbp,
-      fbc: maketouPayload.meta.fbc
+      fbc: maketouPayload.meta.fbc,
+      ttclid: ttclid || req.cookies?.['ttclid'] || '',
+      ttp: ttp || req.cookies?.['_ttp'] || ''
     });
 
     res.cookie('maketou_cart_id', cart.id, { maxAge: 2 * 3600 * 1000, httpOnly: false, path: '/' });
@@ -398,13 +401,14 @@ app.get('/api/checkout/verify', async (req, res) => {
     const downloadUrl = `/api/download/guide?orderId=${encodeURIComponent(finalOrderId)}&cartId=${encodeURIComponent(finalCartId)}&token=${encodeURIComponent(paidToken)}&action=download`;
     const openUrl = `/api/download/guide?orderId=${encodeURIComponent(finalOrderId)}&cartId=${encodeURIComponent(finalCartId)}&token=${encodeURIComponent(paidToken)}&action=open`;
 
-    // Déclenchement unique du Meta CAPI côté serveur
+    // Déclenchement unique de Meta CAPI et TikTok CAPI côté serveur
     if (order && !order.purchase_tracked) {
       db.markPurchaseTrackedAtomically(finalOrderId);
       const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
       const userAgent = req.headers['user-agent'];
       const host = req.headers['x-forwarded-host'] || req.headers.host || '';
 
+      // 1. Meta Conversions API (CAPI)
       sendMetaPurchaseEvent({
         cartId: finalCartId,
         email: order.email,
@@ -419,6 +423,20 @@ app.get('/api/checkout/verify', async (req, res) => {
         currency: 'XOF',
         eventSourceUrl: `https://${host}/confirmation-achat`
       }).catch(err => console.error('[Meta CAPI Async Error]', err));
+
+      // 2. TikTok Events API (CAPI)
+      sendTikTokCompletePaymentEvent({
+        cartId: finalCartId,
+        email: order.email,
+        phone: order.phone,
+        clientIp,
+        userAgent,
+        ttclid: order.ttclid || req.cookies?.['ttclid'] || '',
+        ttp: order.ttp || req.cookies?.['_ttp'] || '',
+        amount: process.env.PRODUCT_PRICE_XOF || 1500,
+        currency: 'XOF',
+        eventSourceUrl: `https://${host}/confirmation-achat`
+      }).catch(err => console.error('[TikTok CAPI Async Error]', err));
     }
 
     return res.status(200).json({

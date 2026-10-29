@@ -187,7 +187,9 @@ document.addEventListener('DOMContentLoaded', () => {
           email,
           phone: fullPhone,
           fbp: getCookie('_fbp'),
-          fbc: getCookie('_fbc')
+          fbc: getCookie('_fbc'),
+          ttclid: getCookie('ttclid') || new URLSearchParams(window.location.search).get('ttclid') || '',
+          ttp: getCookie('_ttp')
         };
 
         const res = await fetch('/api/checkout/create', {
